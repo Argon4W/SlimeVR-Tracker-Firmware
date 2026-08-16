@@ -15,7 +15,7 @@ void app_main(void) {
 
 	ptr(I2CRuntimeContext) I2CContext = alloc_ptr(I2CRuntimeContext);
 
-	newI2CRuntimeContext(I2CContext);
+	ESP_ERROR_CHECK(newI2CRuntimeContext(I2CContext));
 
 	while (true) {
 		u8 buffer[1];

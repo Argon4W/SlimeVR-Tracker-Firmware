@@ -2,8 +2,8 @@
 // Created by progr on 2026/8/16.
 //
 
-#ifndef I2C_H
-#define I2C_H
+#ifndef SLIME_I2C_H
+#define SLIME_I2C_H
 
 #include "driver/i2c_master.h"
 #include "SlimeCommon.h"
@@ -32,6 +32,6 @@ typedef struct {
 } I2CRuntimeContext;
 
 // The entry point function of the I2C initialization.
-void newI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextOut);
+esp_err_t newI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextOut);
 
-#endif // I2C_H
+#endif // SLIME_I2C_H
