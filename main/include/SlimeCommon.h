@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef SLIME_COMMON_H
+#define SLIME_COMMON_H
 
 #include <inttypes.h>
 
@@ -11,7 +11,7 @@
 #define const_ptr(type)									const type*									// Constant pointer type of the type.
 #define func(function_name, return_type, arguments...)	return_type (*function_name)(arguments)		// Function pointer type.
 #define cast_to(type, value)							((type)(value))								// Type cast.
-#define cast_ptr(type, value)							(cast_to(ptr(type), value))			// Pointer cast to value.
+#define cast_ptr(type, value)							(cast_to(ptr(type), value))					// Pointer cast to value.
 #define alloc_ptr(type)									cast_to(ptr(type), calloc(1, sizeof(type)))	// Allocate pointer.
 
 // Unified primitive types.
@@ -30,4 +30,4 @@ typedef int64_t		s64;			// Signed 64-bit integer.
 typedef float		f32;			// 32-bit floating point.
 typedef double		f64;			// 64-bit floating point.
 
-#endif //COMMON_H
+#endif // SLIME_COMMON_H

@@ -107,27 +107,37 @@ void platformDelay(u32 milliseconds) {
 }
 
 esp_err_t newI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextOut) {
+	esp_err_t ret = ESP_OK;
+
 	// Log the operation if I2C master debug logging is enabled.
 	#ifdef CONFIG_I2C_MASTER_DEBUG_LOGGING
 		ESP_LOGD(TAG, "Creating I2C runtime context.");
 	#endif // CONFIG_I2C_MASTER_DEBUG_LOGGING
 
+	// Create the I2C device contexts.
+	ptr(I2CDeviceContext) LSM6DSV_I2CDeviceContext = NULL;
+	ptr(I2CDeviceContext) QMC6309_I2CDeviceContext = NULL;
+
 	// Create the I2C master bus using the master bus configuration.
-	ESP_RETURN_ON_ERROR(i2c_new_master_bus(ref(I2CMasterBusConfig), ref(I2CRuntimeContextOut->I2CMasterBus)), TAG, "Failed to create I2C master bus.");
+	ESP_GOTO_ON_ERROR(i2c_new_master_bus(ref(I2CMasterBusConfig), ref(I2CRuntimeContextOut->I2CMasterBus)), error, TAG, "Failed to create I2C master bus.");
 
-	// Create the I2C master device context.
-	ptr(I2CDeviceContext) LSM6DSV_I2CDeviceContext = alloc_ptr(I2CDeviceContext);
-	ptr(I2CDeviceContext) QMC6309_I2CDeviceContext = alloc_ptr(I2CDeviceContext);
+	// Allocate the I2C device contexts.
+	LSM6DSV_I2CDeviceContext = alloc_ptr(I2CDeviceContext);
+	QMC6309_I2CDeviceContext = alloc_ptr(I2CDeviceContext);
 
-	// Fill the I2C master device context.
+	// Check if the device contexts is allocated.
+	ESP_GOTO_ON_FALSE(LSM6DSV_I2CDeviceContext, ESP_ERR_NO_MEM, error, TAG, "Failed to create I2C device context for LSM6DSV");
+	ESP_GOTO_ON_FALSE(QMC6309_I2CDeviceContext, ESP_ERR_NO_MEM, error, TAG, "Failed to create I2C device context for QMC6309");
+
+	// Fill the I2C device context.
 	LSM6DSV_I2CDeviceContext->I2CDeviceAddress	= LSM6DSV_I2C_ADD_L;
 	QMC6309_I2CDeviceContext->I2CDeviceAddress	= 0x7CU;
 	LSM6DSV_I2CDeviceContext->I2CDeviceName		= LSM6DSV_name;
 	QMC6309_I2CDeviceContext->I2CDeviceName		= QMC6309_name;
 
 	// Create the I2C master devices using the master device configurations then fill the handles into device contexts.
-	ESP_RETURN_ON_ERROR(i2c_master_bus_add_device(I2CRuntimeContextOut->I2CMasterBus, &LSM6DSV_I2CDeviceConfig, ref(LSM6DSV_I2CDeviceContext->I2CDeviceHandle)), TAG, "Failed to create I2C master device for LSM6DSV."); // Create the I2C master device for LSM6DSV.
-	ESP_RETURN_ON_ERROR(i2c_master_bus_add_device(I2CRuntimeContextOut->I2CMasterBus, &QMC6309_I2CDeviceConfig, ref(QMC6309_I2CDeviceContext->I2CDeviceHandle)), TAG, "Failed to create I2C master device for QMC6309."); // Create the I2C master device for QMC6309.
+	ESP_GOTO_ON_ERROR(i2c_master_bus_add_device(I2CRuntimeContextOut->I2CMasterBus, &LSM6DSV_I2CDeviceConfig, ref(LSM6DSV_I2CDeviceContext->I2CDeviceHandle)), error, TAG, "Failed to create I2C master device for LSM6DSV."); // Create the I2C master device for LSM6DSV.
+	ESP_GOTO_ON_ERROR(i2c_master_bus_add_device(I2CRuntimeContextOut->I2CMasterBus, &QMC6309_I2CDeviceConfig, ref(QMC6309_I2CDeviceContext->I2CDeviceHandle)), error, TAG, "Failed to create I2C master device for QMC6309."); // Create the I2C master device for QMC6309.
 
 	// Fill the runtime context.
 	I2CRuntimeContextOut->LSM6DSV_I2CDeviceContext	= LSM6DSV_I2CDeviceContext;
@@ -141,5 +151,15 @@ esp_err_t newI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextOut) {
 		ESP_LOGD(TAG, "I2C runtime context created.");
 	#endif // CONFIG_I2C_MASTER_DEBUG_LOGGING
 
-	return ESP_OK;
+	return ret;
+
+	// Resource cleanup when error occurred.
+	error:
+		if (QMC6309_I2CDeviceContext && QMC6309_I2CDeviceContext->I2CDeviceHandle)	i2c_master_bus_rm_device(QMC6309_I2CDeviceContext->I2CDeviceHandle);	// Clear the I2C master device handle of QMC6309.
+		if (LSM6DSV_I2CDeviceContext && LSM6DSV_I2CDeviceContext->I2CDeviceHandle)	i2c_master_bus_rm_device(LSM6DSV_I2CDeviceContext->I2CDeviceHandle);	// Clear the I2C master device handle of LSM6DSV.
+		if (QMC6309_I2CDeviceContext)												free					(QMC6309_I2CDeviceContext);						// Clear the I2C device context of QMC6309.
+		if (LSM6DSV_I2CDeviceContext)												free					(LSM6DSV_I2CDeviceContext);						// Clear the I2C device context of LSM6DSV.
+		if (I2CRuntimeContextOut->I2CMasterBus)										i2c_del_master_bus		(I2CRuntimeContextOut->I2CMasterBus);			// Clear the I2C mester bus.
+
+	return ret;
 }

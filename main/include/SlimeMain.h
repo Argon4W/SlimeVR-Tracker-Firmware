@@ -16,4 +16,4 @@ typedef struct {
 
 } SlimeVRRuntimeContext;
 
-#endif //SLIME_MAIN_H
+#endif // SLIME_MAIN_H
