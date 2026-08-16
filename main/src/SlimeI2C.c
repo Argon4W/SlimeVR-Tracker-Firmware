@@ -109,7 +109,7 @@ void platformDelay(u32 milliseconds) {
 esp_err_t newI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextOut) {
 	esp_err_t ret = ESP_OK;
 
-	// Log the operation if I2C master debug logging is enabled.
+	// Log the progress if I2C master debug logging is enabled.
 	#ifdef CONFIG_I2C_MASTER_DEBUG_LOGGING
 		ESP_LOGD(TAG, "Creating I2C runtime context.");
 	#endif // CONFIG_I2C_MASTER_DEBUG_LOGGING
@@ -121,16 +121,26 @@ esp_err_t newI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextOut) {
 	ptr(I2CDeviceContext) LSM6DSV_I2CDeviceContext = NULL;
 	ptr(I2CDeviceContext) QMC6309_I2CDeviceContext = NULL;
 
+	// Log the progress if I2C master debug logging is enabled.
+	#ifdef CONFIG_I2C_MASTER_DEBUG_LOGGING
+		ESP_LOGD(TAG, "Creating I2C master bus.");
+	#endif // CONFIG_I2C_MASTER_DEBUG_LOGGING
+
 	// Create the I2C master bus using the master bus configuration.
 	ESP_GOTO_ON_ERROR(i2c_new_master_bus(ref(I2CMasterBusConfig), ref(I2CMasterBus)), error, TAG, "Failed to create I2C master bus.");
+
+	// Log the progress if I2C master debug logging is enabled.
+	#ifdef CONFIG_I2C_MASTER_DEBUG_LOGGING
+		ESP_LOGD(TAG, "Allocating I2C device contexts.");
+	#endif // CONFIG_I2C_MASTER_DEBUG_LOGGING
 
 	// Allocate the I2C device contexts.
 	LSM6DSV_I2CDeviceContext = alloc_ptr(I2CDeviceContext);
 	QMC6309_I2CDeviceContext = alloc_ptr(I2CDeviceContext);
 
 	// Check if the device contexts is allocated.
-	ESP_GOTO_ON_FALSE(LSM6DSV_I2CDeviceContext, ESP_ERR_NO_MEM, error, TAG, "Failed to create I2C device context for LSM6DSV");
-	ESP_GOTO_ON_FALSE(QMC6309_I2CDeviceContext, ESP_ERR_NO_MEM, error, TAG, "Failed to create I2C device context for QMC6309");
+	ESP_GOTO_ON_FALSE((LSM6DSV_I2CDeviceContext != NULL), ESP_ERR_NO_MEM, error, TAG, "Failed to create I2C device context for LSM6DSV");
+	ESP_GOTO_ON_FALSE((QMC6309_I2CDeviceContext != NULL), ESP_ERR_NO_MEM, error, TAG, "Failed to create I2C device context for QMC6309");
 
 	// Fill the I2C device context.
 	LSM6DSV_I2CDeviceContext->I2CDeviceAddress	= LSM6DSV_I2C_ADD_L;
@@ -138,11 +148,17 @@ esp_err_t newI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextOut) {
 	LSM6DSV_I2CDeviceContext->I2CDeviceName		= LSM6DSV_name;
 	QMC6309_I2CDeviceContext->I2CDeviceName		= QMC6309_name;
 
+	// Log the progress if I2C master debug logging is enabled.
+	#ifdef CONFIG_I2C_MASTER_DEBUG_LOGGING
+		ESP_LOGD(TAG, "Creating I2C master device handles.");
+	#endif // CONFIG_I2C_MASTER_DEBUG_LOGGING
+
 	// Create the I2C master devices using the master device configurations then fill the handles into device contexts.
 	ESP_GOTO_ON_ERROR(i2c_master_bus_add_device(I2CMasterBus, &LSM6DSV_I2CDeviceConfig, ref(LSM6DSV_I2CDeviceContext->I2CDeviceHandle)), error, TAG, "Failed to create I2C master device for LSM6DSV."); // Create the I2C master device for LSM6DSV.
 	ESP_GOTO_ON_ERROR(i2c_master_bus_add_device(I2CMasterBus, &QMC6309_I2CDeviceConfig, ref(QMC6309_I2CDeviceContext->I2CDeviceHandle)), error, TAG, "Failed to create I2C master device for QMC6309."); // Create the I2C master device for QMC6309.
 
-	// Fill the runtime context.
+	// No error occurred.
+	// It is safe to fill the output runtime context now.
 	I2CRuntimeContextOut->I2CMasterBus				= I2CMasterBus;
 	I2CRuntimeContextOut->LSM6DSV_I2CDeviceContext	= LSM6DSV_I2CDeviceContext;
 	I2CRuntimeContextOut->QMC6309_I2CDeviceContext	= QMC6309_I2CDeviceContext;
@@ -150,20 +166,51 @@ esp_err_t newI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextOut) {
 	I2CRuntimeContextOut->platformI2CReadFunc		= platformI2CRead;
 	I2CRuntimeContextOut->platformDelayFunc			= platformDelay;
 
-	// Log the operation if I2C master debug logging is enabled.
+	// Log the progress if I2C master debug logging is enabled.
 	#ifdef CONFIG_I2C_MASTER_DEBUG_LOGGING
 		ESP_LOGD(TAG, "I2C runtime context created.");
 	#endif // CONFIG_I2C_MASTER_DEBUG_LOGGING
 
 	return ret;
 
+	// Log the progress if I2C master debug logging is enabled.
+	#ifdef CONFIG_I2C_MASTER_DEBUG_LOGGING
+		ESP_LOGD(TAG, "Error occurred.");
+		ESP_LOGD(TAG, "Cleaning up resources.");
+	#endif // CONFIG_I2C_MASTER_DEBUG_LOGGING
+
 	// Resource cleanup when error occurred.
 	error:
-		if (QMC6309_I2CDeviceContext && QMC6309_I2CDeviceContext->I2CDeviceHandle)	i2c_master_bus_rm_device(QMC6309_I2CDeviceContext->I2CDeviceHandle);	// Clear the I2C master device handle of QMC6309.
-		if (LSM6DSV_I2CDeviceContext && LSM6DSV_I2CDeviceContext->I2CDeviceHandle)	i2c_master_bus_rm_device(LSM6DSV_I2CDeviceContext->I2CDeviceHandle);	// Clear the I2C master device handle of LSM6DSV.
-		if (QMC6309_I2CDeviceContext)												free					(QMC6309_I2CDeviceContext);						// Clear the I2C device context of QMC6309.
-		if (LSM6DSV_I2CDeviceContext)												free					(LSM6DSV_I2CDeviceContext);						// Clear the I2C device context of LSM6DSV.
-		if (I2CMasterBus)															i2c_del_master_bus		(I2CMasterBus);									// Clear the I2C mester bus.
+		if (QMC6309_I2CDeviceContext && QMC6309_I2CDeviceContext->I2CDeviceHandle)	ESP_ERROR_CHECK(i2c_master_bus_rm_device(QMC6309_I2CDeviceContext->I2CDeviceHandle));	// Cleanup the I2C master device handle of QMC6309.
+		if (LSM6DSV_I2CDeviceContext && LSM6DSV_I2CDeviceContext->I2CDeviceHandle)	ESP_ERROR_CHECK(i2c_master_bus_rm_device(LSM6DSV_I2CDeviceContext->I2CDeviceHandle));	// Cleanup the I2C master device handle of LSM6DSV.
+		if (QMC6309_I2CDeviceContext)																free					(QMC6309_I2CDeviceContext);						// Cleanup the I2C device context of QMC6309.
+		if (LSM6DSV_I2CDeviceContext)																free					(LSM6DSV_I2CDeviceContext);						// Cleanup the I2C device context of LSM6DSV.
+		if (I2CMasterBus)															ESP_ERROR_CHECK(i2c_del_master_bus		(I2CMasterBus));								// Cleanup the I2C master bus.
 
 	return ret;
+}
+
+esp_err_t deleteI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextIn) {
+	ESP_RETURN_ON_FALSE((I2CRuntimeContextIn != NULL), ESP_ERR_INVALID_ARG, TAG, "This I2C runtime context is not initialized.");
+
+	// Dereferencing all fields that needs to be cleaned up.
+	i2c_master_bus_handle_t	I2CMasterBus				= I2CRuntimeContextIn->I2CMasterBus;
+	ptr(I2CDeviceContext)	LSM6DSV_I2CDeviceContext	= I2CRuntimeContextIn->LSM6DSV_I2CDeviceContext;
+	ptr(I2CDeviceContext)	QMC6309_I2CDeviceContext	= I2CRuntimeContextIn->QMC6309_I2CDeviceContext;
+
+	// Cleanup all ESP I2C master driver related handles.
+	ESP_RETURN_ON_ERROR(i2c_master_bus_rm_device(LSM6DSV_I2CDeviceContext->I2CDeviceHandle),	TAG, "Failed to remove I2C master device of LSM6DSV from the I2C master bus.");	// Cleanup the I2C master device handle of LSM6DSV.
+	ESP_RETURN_ON_ERROR(i2c_master_bus_rm_device(QMC6309_I2CDeviceContext->I2CDeviceHandle),	TAG, "Failed to remove I2C master device of QMC6309 from the I2C master bus.");	// Cleanup the I2C master device handle of QMC6309.
+	ESP_RETURN_ON_ERROR(i2c_del_master_bus		(I2CMasterBus),									TAG, "Failed to delete I2C master bus.");										// Cleanup the I2C master bus.
+
+	// Free all I2C device contexts.
+	free(QMC6309_I2CDeviceContext); // Cleanup the I2C device context of QMC6309.
+	free(LSM6DSV_I2CDeviceContext); // Cleanup the I2C device context of LSM6DSV.
+
+	// Detaching all implementation functions.
+	I2CRuntimeContextIn->platformI2CWriteFunc	= NULL;
+	I2CRuntimeContextIn->platformI2CReadFunc	= NULL;
+	I2CRuntimeContextIn->platformDelayFunc		= NULL;
+
+	return ESP_OK;
 }

@@ -32,6 +32,7 @@ typedef struct {
 } I2CRuntimeContext;
 
 // The entry point function of the I2C initialization.
-esp_err_t newI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextOut);
+esp_err_t newI2CRuntimeContext		(ptr(I2CRuntimeContext) I2CRuntimeContextOut);
+esp_err_t deleteI2CRuntimeContext	(ptr(I2CRuntimeContext) I2CRuntimeContextIn);
 
 #endif // SLIME_I2C_H
