@@ -1,0 +1,20 @@
+dependencies:
+  idf:
+    source:
+      type: idf
+    version: 5.5.2
+  lsm6dsv-pid:
+    component_hash: badcaa96b34355450e09af80e9d9859c41851786d8bd7132cf410b0f43cc5c13
+    dependencies:
+    - name: idf
+      version: '>=5.0'
+    source:
+      git: https://github.com/Argon4W/lsm6dsv-pid.git
+      path: .
+      type: git
+    version: f91e215296b896e11ff28851a479772ccb6e9f06
+direct_dependencies:
+- lsm6dsv-pid
+manifest_hash: 5a6f5aaeeb416ec89f27801b3cd0ae3720c9e5a616a8ee89446852e56c6dffdd
+target: esp32s3
+version: 2.0.0

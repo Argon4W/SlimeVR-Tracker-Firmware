@@ -1,0 +1,4 @@
+dependencies:
+  lsm6dsv-pid:
+    git: https://github.com/Argon4W/lsm6dsv-pid.git
+    version: "*"

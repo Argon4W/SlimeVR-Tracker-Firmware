@@ -1,0 +1,42 @@
+menu "SlimeVR Tracker Firmware Configuration"
+
+	source "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
+
+	config DEBUG_LOGGING
+		bool "Enable debug logging"
+		default n
+		help
+			Enable this option will enable the output of debug logging.
+
+	menu "I2C Master Configuration"
+
+		config I2C_MASTER_SCL
+				int "SCL GPIO Num"
+				range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+				default 9
+				help
+					GPIO number for I2C Master clock line.
+
+			config I2C_MASTER_SDA
+				int "SDA GPIO Num"
+				range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+	            default 10
+				help
+					GPIO number for I2C Master data line.
+
+			config I2C_MASTER_FREQUENCY
+				int "Master Frequency"
+				default 400000
+				help
+					I2C Speed of Master Device.
+
+			config I2C_MASTER_DEBUG_LOGGING
+				bool "Enable I2C master debug logging"
+				default n
+				depends on DEBUG_LOGGING
+				help
+					Enable this option will enable the output of I2C master debug logging.
+
+	endmenu
+
+endmenu
