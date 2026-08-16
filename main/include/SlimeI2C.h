@@ -31,7 +31,7 @@ typedef struct {
 	PlatformDelayFunc		platformDelayFunc;		// Delay function handle.
 } I2CRuntimeContext;
 
-// The entry point function of the I2C initialization.
+// The entry point functions of the I2C initialization/deinitialization.
 esp_err_t newI2CRuntimeContext		(ptr(I2CRuntimeContext) I2CRuntimeContextOut);
 esp_err_t deleteI2CRuntimeContext	(ptr(I2CRuntimeContext) I2CRuntimeContextIn);
 

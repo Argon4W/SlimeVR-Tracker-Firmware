@@ -211,14 +211,13 @@ esp_err_t deleteI2CRuntimeContext(ptr(I2CRuntimeContext) I2CRuntimeContextIn) {
 	I2CRuntimeContextIn->I2CMasterBus = NULL;
 
 	// Detaching all I2C device contexts.
-	I2CRuntimeContextIn->LSM6DSV_I2CDeviceContext = NULL;
-	I2CRuntimeContextIn->QMC6309_I2CDeviceContext = NULL;
+	I2CRuntimeContextIn->LSM6DSV_I2CDeviceContext = NULL; // Detaching the I2C device context of LSM6DSV.
+	I2CRuntimeContextIn->QMC6309_I2CDeviceContext = NULL; // Detaching the I2C device context of QMC6309.
 
 	// Detaching all implementation functions.
 	I2CRuntimeContextIn->platformI2CWriteFunc	= NULL;
 	I2CRuntimeContextIn->platformI2CReadFunc	= NULL;
 	I2CRuntimeContextIn->platformDelayFunc		= NULL;
-
 
 	return ESP_OK;
 }
