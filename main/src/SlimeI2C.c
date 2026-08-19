@@ -1,11 +1,11 @@
+#include "esp_check.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "SlimeI2C.h"
-
-#include <esp_check.h>
-
 #include "lsm6dsv_reg.h"
+#include "qmc6309_reg.h"
+#include "SlimeI2C.h"
+#include "driver/spi_master.h"
 
 static const_string TAG = "SlimeI2C";
 
@@ -31,7 +31,7 @@ const static i2c_device_config_t LSM6DSV_I2CDeviceConfig = {
 // The I2C master device configuration of the QMC6309.
 const static i2c_device_config_t QMC6309_I2CDeviceConfig = {
 	.dev_addr_length	= I2C_ADDR_BIT_LEN_7,
-	.device_address		= 0x7CU,
+	.device_address		= QMC6309_I2C_ADDRESS,
 	.scl_speed_hz		= CONFIG_I2C_MASTER_FREQUENCY
 };
 

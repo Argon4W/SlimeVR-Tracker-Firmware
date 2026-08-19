@@ -1,7 +1,11 @@
 #ifndef SLIME_COMMON_H
 #define SLIME_COMMON_H
 
-#include <inttypes.h>
+#ifdef __cplusplus
+	extern "C" {
+#endif // __cplusplus
+
+#include <stdint.h>
 
 // Utilities macros.
 #define ref(value)										(&value)									// Get the pointer of a value.
@@ -29,5 +33,9 @@ typedef int32_t		s32;			// Signed 32-bit integer.
 typedef int64_t		s64;			// Signed 64-bit integer.
 typedef float		f32;			// 32-bit floating point.
 typedef double		f64;			// 64-bit floating point.
+
+#ifdef __cplusplus
+	}
+#endif // __cplusplus
 
 #endif // SLIME_COMMON_H

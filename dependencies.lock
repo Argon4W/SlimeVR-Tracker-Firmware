@@ -4,7 +4,7 @@ dependencies:
       type: idf
     version: 5.5.2
   lsm6dsv-pid:
-    component_hash: badcaa96b34355450e09af80e9d9859c41851786d8bd7132cf410b0f43cc5c13
+    component_hash: 3a72d5460dd58ade5815caa1e269fae2214354f2ab439e424580e3eb8788d7f7
     dependencies:
     - name: idf
       version: '>=5.0'
@@ -12,9 +12,20 @@ dependencies:
       git: https://github.com/Argon4W/lsm6dsv-pid.git
       path: .
       type: git
-    version: f91e215296b896e11ff28851a479772ccb6e9f06
+    version: 02c5dcb8fa38c896892c940869c0f37ec691ece8
+  qmc6309-pid:
+    component_hash: 0cd3e09641993135cfb194bd3af2146cc1ea93f3f1b16bcb5906d94e4d3f01ba
+    dependencies:
+    - name: idf
+      version: '>=5.0'
+    source:
+      git: https://github.com/Argon4W/qmc6309-pid.git
+      path: .
+      type: git
+    version: 7795fa36a95e99a9825aef65f7a1c5428e335dc1
 direct_dependencies:
 - lsm6dsv-pid
-manifest_hash: 5a6f5aaeeb416ec89f27801b3cd0ae3720c9e5a616a8ee89446852e56c6dffdd
+- qmc6309-pid
+manifest_hash: 12e092795c310dd37584a21f64851b1c1f6e6144d4dfb770bb4612408ed1d006
 target: esp32s3
 version: 2.0.0

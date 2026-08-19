@@ -5,6 +5,10 @@
 #ifndef SLIME_I2C_H
 #define SLIME_I2C_H
 
+#ifdef __cplusplus
+	extern "C" {
+#endif // __cplusplus
+
 #include "driver/i2c_master.h"
 #include "SlimeCommon.h"
 
@@ -34,5 +38,9 @@ typedef struct {
 // The entry point functions of the I2C initialization/deinitialization.
 esp_err_t newI2CRuntimeContext		(ptr(I2CRuntimeContext) I2CRuntimeContextOut);
 esp_err_t deleteI2CRuntimeContext	(ptr(I2CRuntimeContext) I2CRuntimeContextIn);
+
+#ifdef __cplusplus
+	}
+#endif // __cplusplus
 
 #endif // SLIME_I2C_H
