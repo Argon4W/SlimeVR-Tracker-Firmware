@@ -1,4 +1,38 @@
 dependencies:
+  espressif/button:
+    component_hash: a1f34e8ed2e61ffef1a230fd9477005c2db335c7e1f6a239f43e5f119dcbe1b0
+    dependencies:
+    - name: espressif/cmake_utilities
+      registry_url: https://components.espressif.com
+      require: private
+      version: '*'
+    - name: idf
+      require: private
+      version: '>=4.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 4.2.1
+  espressif/cmake_utilities:
+    component_hash: 05165f30922b422b4b90c08845e6d449329b97370fbd06309803d8cb539d79e3
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.1'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.1.1
+  espressif/eigen:
+    component_hash: 64a82d75ea6b7cb9240398ce0b6616e905d71b83a734b2cf9cb58ad09dd4f5ea
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.3.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 3.4.0~2
   idf:
     source:
       type: idf
@@ -13,8 +47,18 @@ dependencies:
       path: .
       type: git
     version: 02c5dcb8fa38c896892c940869c0f37ec691ece8
+  magneto-pid:
+    component_hash: 580bc8dad407a59e14011c4cfb0be5bcaf36938206fd7e948cf2f8a22eac26f3
+    dependencies:
+    - name: idf
+      version: '>=5.0'
+    source:
+      git: https://github.com/Argon4W/magneto-pid.git
+      path: .
+      type: git
+    version: c150f4f2fde2669e53b32119d3538f9e2e591194
   qmc6309-pid:
-    component_hash: 0cd3e09641993135cfb194bd3af2146cc1ea93f3f1b16bcb5906d94e4d3f01ba
+    component_hash: b282e168466a3fd3eb0388a7abf7342799ac0e18b7c9d8d4ee3e5c30f3976d12
     dependencies:
     - name: idf
       version: '>=5.0'
@@ -22,10 +66,21 @@ dependencies:
       git: https://github.com/Argon4W/qmc6309-pid.git
       path: .
       type: git
-    version: 7795fa36a95e99a9825aef65f7a1c5428e335dc1
+    version: 90b994c2b9a56d70eeac867be7d53708b6dc263f
+  waveshare/esp_lcd_st7735:
+    component_hash: 811c4168555af5878eb9ec8c3eee8af277afebc3bc516bc0daa57656eee09c69
+    dependencies: []
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.0.1
 direct_dependencies:
+- espressif/button
+- espressif/eigen
 - lsm6dsv-pid
+- magneto-pid
 - qmc6309-pid
-manifest_hash: 12e092795c310dd37584a21f64851b1c1f6e6144d4dfb770bb4612408ed1d006
+- waveshare/esp_lcd_st7735
+manifest_hash: f0ff822dc374599362ef4ab5bbcd2ce70e55a32a17511e01352d831cb2431b46
 target: esp32s3
 version: 2.0.0

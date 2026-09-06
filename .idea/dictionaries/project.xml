@@ -1,10 +1,19 @@
 <component name="ProjectDictionaryState">
   <dictionary name="project">
     <words>
+      <w>ceigen</w>
       <w>endchoice</w>
       <w>endmenu</w>
+      <w>iram</w>
       <w>menuconfig</w>
       <w>orsource</w>
+      <w>psram</w>
+      <w>reinterp</w>
+      <w>sclk</w>
+      <w>spiio</w>
+      <w>unifont</w>
+      <w>unorm</w>
+      <w>usar</w>
     </words>
   </dictionary>
 </component>

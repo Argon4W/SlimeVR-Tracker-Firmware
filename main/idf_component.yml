@@ -1,7 +1,12 @@
 dependencies:
   lsm6dsv-pid:
     git: https://github.com/Argon4W/lsm6dsv-pid.git
-    version: "*"
+    version: '*'
   qmc6309-pid:
     git: https://github.com/Argon4W/qmc6309-pid.git
-    version: "*"
+    version: '*'
+  magneto-pid:
+    git: https://github.com/Argon4W/magneto-pid.git
+    version: '*'
+  waveshare/esp_lcd_st7735: ^1.0.0
+  espressif/button: ^4.2.1

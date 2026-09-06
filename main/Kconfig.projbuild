@@ -8,19 +8,56 @@ menu "SlimeVR Tracker Firmware Configuration"
 		help
 			Enable this option will enable the output of debug logging.
 
+	config SENSOR_LED
+		int "Sensor LED GPIO Num"
+		range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+		default 15
+		help
+			GPIO number for the LED.
+
+	menu "LCD Panel Configuration"
+
+		config LCD_PANEL_BACKLIGHT
+			int "LCD Panel Backlight GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 21
+			help
+				GPIO number for the LCD panel backlight.
+
+		config LCD_PANEL_DC
+			int "LCD Panel DC GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 13
+			help
+				GPIO number for the LCD to select the D/C line.
+
+		config LCD_PANEL_RES
+			int "LCD Panel Reset GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 14
+
+		config LCD_PANEL_DEBUG_LOGGING
+			bool "Enable LCD Panel debug logging"
+			default n
+			depends on DEBUG_LOGGING
+			help
+				Enable this option will enable the output of LCD Panel debug logging.
+
+	endmenu
+
 	menu "I2C Master Configuration"
 
 		config I2C_MASTER_SCL
-				int "SCL GPIO Num"
-				range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
-				default 9
-				help
-					GPIO number for I2C Master clock line.
+			int "SCL GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 17
+			help
+				GPIO number for I2C Master clock line.
 
 		config I2C_MASTER_SDA
 			int "SDA GPIO Num"
 			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
-            default 10
+			default 16
 			help
 				GPIO number for I2C Master data line.
 
@@ -38,5 +75,42 @@ menu "SlimeVR Tracker Firmware Configuration"
 				Enable this option will enable the output of I2C master debug logging.
 
 	endmenu
+
+	menu "SPI Bus Configuration"
+
+		config SPI_BUS_SCLK
+		int "SCLK GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 12
+			help
+				GPIO number for SPI Bus clock line.
+
+		config SPI_BUS_MOSI
+			int "MOSI GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 11
+			help
+				GPIO number for SPI Bus Master-Out-Slave-In line.
+
+		config SPI_BUS_FREQUENCY
+			int "SPI Bus Frequency"
+			default 20000000
+			help
+				Speed of SPI Bus.
+
+		config SPI_BUS_MAX_TRANSFER_SZ
+			int "SPI Bus Maximum Transfer Size."
+			default 10368
+			help
+				Maximum transfer size of the SPI Bus, in bytes.
+
+		config SPI_BUS_DEBUG_LOGGING
+			bool "Enable SPI Bus debug logging"
+			default n
+			depends on DEBUG_LOGGING
+			help
+				Enable this option will enable the output of SPI bus debug logging.
+
+		endmenu
 
 endmenu
