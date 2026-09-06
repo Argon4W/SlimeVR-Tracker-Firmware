@@ -39,8 +39,8 @@ extern "C" {
  * @brief The struct of a font.
  */
 typedef struct {
-			uint32_t		size_x_max;		/*!< The max size of the X axis of a glyph could be in pixels. */
-			uint32_t		size_y;			/*!< The size of the Y axis of a glyph in pixels. */
+			uint32_t		size_x_max;		/*!< The max width of a glyph could be in pixels. */
+			uint32_t		size_y;			/*!< The height of a glyph in pixels. */
 			uint8_t*		glyph_data;		/*!< The pointer to the packed 1bpp LSBit first font glyph data. */
 	const	glyph_info_t**	glyph_table;	/*!< The pointer to the two-level glyph-block lookup table. */
 } esp_fast_text_engine_font_t;
@@ -62,11 +62,31 @@ typedef struct {
 typedef struct {
 			esp_fast_text_engine_font_t	font;					/*!< The font used by the text engine instance. */
 			uint32_t					font_size_multiplier;	/*!< The size multiplier of the font. A 16x16 pixels glyph will be 32x32 pixels in font size 2. */
-			uint32_t					atlas_glyph_size_x;		/*!< The size of the X axis of an atlas glyph slo in pixels. */
-			uint32_t					atlas_glyph_size_y;		/*!< The size of the Y axis of an atlas glyph slot in pixels. */
+			uint32_t					atlas_glyph_size_x;		/*!< The width of an atlas glyph slo in pixels. */
+			uint32_t					atlas_glyph_size_y;		/*!< The height of an atlas glyph slot in pixels. */
 			uint32_t					atlas_glyph_size;		/*!< The count of pixels of an atlas glyph slot. */
 	const	char*						name;					/*!< The name of the text engine instance. */
 } esp_fast_text_engine_instance_properties_t;
+
+/**
+ * @brief The info struct of a baked glyph atlas slot.
+ */
+typedef struct {
+	uint16_t*	buffer;		/*!< The pointer to the buffer of the atlas slot. */
+	uint32_t	size_x;		/*!< The width in pixels of the baked glyph in the atlas slot. */
+	uint16_t	codepoint;	/*!< The codepoint of the baked glyph in the atlas slot. */
+} esp_fast_text_engine_atlas_slot_t;
+
+/**
+ * @brief The common baked glyph atlas struct.
+ */
+typedef struct {
+	const	char*								name;		/*!< The name of the atlas. */
+			esp_fast_text_engine_atlas_slot_t*	slots;		/*!< The array of atlas slot infos in the atlas, in slot index order. */
+			uint16_t*							buffer;		/*!< The pixel buffer of the atlas slots in the atlas. */
+			uint32_t							slot_size;	/*!< The count of pixels of an atlas slot in the atlas. */
+			uint32_t							slot_count;	/*!< The count of atlas slots in the atlas. */
+} esp_fast_text_engine_atlas_t;
 
 /**
  * @brief The linked list node of LRU cache in the LRU atlas.
@@ -77,23 +97,19 @@ typedef struct esp_fast_text_engine_lru_node esp_fast_text_engine_lru_node_t;
  * @brief The linked list node of LRU cache in the LRU atlas.
  */
 struct esp_fast_text_engine_lru_node {
-	esp_fast_text_engine_lru_node_t*	prev;			/*!< Pointer to the previous linked list node. */
-	esp_fast_text_engine_lru_node_t*	next;			/*!< Pointer to the next linked list node. */
-	uint16_t*							pixel_buffer;	/*!< The pointer to the pixel buffer slot of the linked list node. */
-	uint16_t							codepoint;		/*!< The codepoint of the current glyph in the linked list node, sentinel value 0xFFFFU means that the node is empty. */
-	uint32_t							size_x;			/*!< The size of the X axis in pixels of the current glyph in the linked list node. */
+	esp_fast_text_engine_lru_node_t*	prev; /*!< Pointer to the previous linked list node. */
+	esp_fast_text_engine_lru_node_t*	next; /*!< Pointer to the next linked list node. */
+	esp_fast_text_engine_atlas_slot_t*	slot; /*!< The internal atlas slot of the node. */
 };
 
 /**
- * @brief The LRU atlas struct of the text engine instance.
+ * @brief The LRU baked glyph atlas struct of the text engine instance.
  */
 typedef struct {
-	const	char*								name;				/*!< The name of the LRU atlas. */
-			esp_fast_text_engine_lru_node_t*	head;				/*!< Pointer to the head node of the LRU linked list in the atlas. */
-			esp_fast_text_engine_lru_node_t*	tail;				/*!< Pointer to the tail node of the LRU linked list in the atlas. */
-			esp_fast_text_engine_lru_node_t*	nodes;				/*!< Array of all nodes of the LRU linked list in the atlas. */
-			uint16_t*							pixel_buffer;		/*!< The pixel buffer of the atlas in RGB565 bitmask, max_size_x * (size_y * slots). */
-			uint32_t							slot_count;			/*!< The count of atlas slots in the atlas. */
+			esp_fast_text_engine_lru_node_t*	head;	/*!< Pointer to the head node of the LRU linked list in the atlas. */
+			esp_fast_text_engine_lru_node_t*	tail;	/*!< Pointer to the tail node of the LRU linked list in the atlas. */
+			esp_fast_text_engine_lru_node_t*	nodes;	/*!< Array of all nodes of the LRU linked list in the atlas in slot index order. */
+			esp_fast_text_engine_atlas_t*		atlas;	/*!< The internal baked glyph atlas of the LRU atlas. */
 } esp_fast_text_engine_lru_atlas_t;
 
 /**
@@ -103,8 +119,7 @@ typedef struct {
 	esp_fast_text_engine_instance_properties_t*	properties;			/*!< The internal properties of the text engine instance. */
 	esp_fast_text_engine_lru_atlas_t*			iram_lru_atlas;		/*!< The L1 LRU atlas in internal RAM (IRAM). */
 	esp_fast_text_engine_lru_atlas_t*			psram_lru_atlas;	/*!< The L2 LRU atlas in PSRAM. */
-	uint16_t*									ascii_atlas;		/*!< The resident atlas of ASCII characters in RGB565 bitmask, max_size_x * 128. */
-	uint32_t*									ascii_size_x;		/*!< The cache of the size of the X axis in pixels of the all characters in the resident ASCII atlas. */
+	esp_fast_text_engine_atlas_t*				ascii_atlas;		/*!< The resident atlas of ASCII characters in RGB565 bitmask, max_size_x * 128. */
 	uint16_t*									swap_buffer;		/*!< The scratch pixel buffer of the atlas for swapping baked glyphs between L1 and L2 atlas. */
 } esp_fast_text_engine_instance_t;
 
@@ -136,7 +151,7 @@ esp_err_t esp_fast_text_engine_del_text_engine_instance(esp_fast_text_engine_ins
  * @param position_x			The upper-left origin position X of the glyph to draw in pixels.
  * @param position_y			The upper-left origin position Y of the glyph to draw in pixels.
  * @param color_rgba8888		The color of the glyph to be drawn in RGBA 8888 format (MSB first).
- * @param advance_x				Advance the position in X axis in pixels after the glyph is drawn, can be NULL if no need.
+ * @param advance_x				Advance the position X in pixels after the glyph is drawn, can be NULL if no need.
  * @return						The status of the draw.
  */
 esp_err_t esp_fast_text_engine_draw_glyph(
@@ -157,7 +172,7 @@ esp_err_t esp_fast_text_engine_draw_glyph(
  * @param position_x			The upper-left origin position X of the glyph to draw in pixels.
  * @param position_y			The upper-left origin position Y of the glyph to draw in pixels.
  * @param color_rgb565			The color of the glyph to be drawn in RGB 565 format (MSB first).
- * @param advance_x				Advance the position in X axis in pixels after the glyph is drawn, can be NULL if no need.
+ * @param advance_x				Advance the position X in pixels after the glyph is drawn, can be NULL if no need.
  * @return						The status of the draw.
  */
 esp_err_t esp_fast_text_engine_draw_native_glyph(

@@ -3,13 +3,12 @@
 
 void private_bake_atlas_from_1bpp(
 	const	esp_fast_text_engine_instance_t*	context,
-			uint16_t							codepoint,
-			uint16_t*							pixel_buffer,
-			uint32_t*							glyph_size_x
+			esp_fast_text_engine_atlas_slot_t*	atlas_slot,
+			uint16_t							codepoint
 ) {
 	// Get the properties, configuration, and font of the text engine instance.
-	const esp_fast_text_engine_instance_properties_t*	properties		= context		->properties;
-	const esp_fast_text_engine_font_t*					font			= &properties	->font;
+	const esp_fast_text_engine_instance_properties_t*	properties	= context		->properties;
+	const esp_fast_text_engine_font_t*					font		= &properties	->font;
 
 	// Extract necessary parameters for glyph baking.
 	const uint32_t atlas_glyph_size_x	= properties->atlas_glyph_size_x;
@@ -28,11 +27,15 @@ void private_bake_atlas_from_1bpp(
 	const uint32_t offset = info.offset;
 	const uint32_t size_x = info.size_x;
 
-	// Return the width of the glyph.
-	*glyph_size_x = size_x * font_size_multiplier;
-
 	// Calculate bytes in a line of 1bpp glyph data.
 	const uint32_t font_size_x_byte	= (size_x + 7U) / 8U;
+
+	// Get the buffer pointer to bake the glyph into.
+	uint16_t* buffer = atlas_slot->buffer;
+
+	// Update the slot info.
+	atlas_slot->codepoint	= codepoint;
+	atlas_slot->size_x		= size_x * font_size_multiplier;
 
 	// Bake bitmask for all pixels of the glyph.
 	for		(uint32_t position_y = 0U; position_y < atlas_glyph_size_y; position_y ++) {
@@ -61,7 +64,7 @@ void private_bake_atlas_from_1bpp(
 			const uint16_t bitmask = (pixel_byte & (1U << position_x_bits)) ? 0xFFFFU : 0x0000U;
 
 			// Write the bitmask value to the atlas.
-			pixel_buffer[
+			buffer[
 				/* index_y = */ position_y * atlas_glyph_size_x +
 				/* index_x = */ position_x
 			] = bitmask;

@@ -1,7 +1,9 @@
 #include "string.h"
+#include "esp_check.h"
+#include "esp_log.h"
 #include "esp_fast_text_engine.h"
 #include "esp_fast_text_engine_common.h"
-#include "esp_fast_lcd_common.h"
+#include "esp_fast_text_engine_common.h"
 
 esp_err_t esp_fast_text_engine_draw_native_glyph(
 	const	esp_fast_text_engine_instance_t*	text_engine_context,
@@ -47,7 +49,7 @@ esp_err_t esp_fast_text_engine_draw_native_glyph(
 		ESP_LOGD(ESP_FAST_TEXT_ENGINE_TAG, "Text engine instance \"%s\" is performing an opaque native glyph draw at: positionX=%" PRId32 ", positionY=%" PRId32 ".",
 			/* s		*/ text_engine_context->properties->name,
 			/* PRId32	*/ position_x,
-			/* PRId32	*/ position_y,
+			/* PRId32	*/ position_y
 		);
 		ESP_LOGD(ESP_FAST_TEXT_ENGINE_TAG, "Pixel color of the glyph: r=0x%02" PRIX8 ", g=0x%02" PRIX8 ", b=0x%02" PRIX8 ".",
 			/* PRIX8 */ r5_src,
@@ -122,7 +124,7 @@ esp_err_t esp_fast_text_engine_draw_glyph(
 		ESP_LOGD(ESP_FAST_TEXT_ENGINE_TAG, "Text engine instance \"%s\" is performing an translucent glyph draw at: positionX=%" PRId32 ", positionY=%" PRId32 ".",
 			/* s		*/ text_engine_context->properties->name,
 			/* PRId32	*/ position_x,
-			/* PRId32	*/ position_y,
+			/* PRId32	*/ position_y
 		);
 		ESP_LOGD(ESP_FAST_TEXT_ENGINE_TAG, "Pixel color of the glyph before the blending: r=0x%02" PRIX8 ", g=0x%02" PRIX8 ", b=0x%02" PRIX8 ", a=0x%02" PRIX8 ".",
 			/* PRIX8 */ r8_src,
