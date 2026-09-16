@@ -4,7 +4,7 @@
 using namespace Eigen;
 
 /**
- * @brief The matrix type we used in the CEigen.
+ * @brief The dynamic Eigen matrix type used in the CEigen.
  */
 typedef Matrix<float, Dynamic, Dynamic, RowMajor> ceigen_matrix_impl;
 
@@ -13,7 +13,7 @@ typedef Matrix<float, Dynamic, Dynamic, RowMajor> ceigen_matrix_impl;
  */
 struct ceigen_matrix {
 	/**
-	 * @brief Real Eigen matrix wrapped by the struct.
+	 * @brief Dynamic eigen matrix wrapped by the struct.
 	 */
 	ceigen_matrix_impl impl;
 
@@ -23,15 +23,15 @@ struct ceigen_matrix {
 	 * @param cols	columns of the impl matrix.
 	 */
 	ceigen_matrix(
-		const int32_t rows,
-		const int32_t cols
+		const uint32_t rows,
+		const uint32_t cols
 	): impl(rows, cols) {
 		// Initialize all values in the matrix to zero.
 		impl.setZero();
 	}
 
 	/**
-	 * @brief Default deconstructor of the wrapper struct for freeing the real matrix wrapped by the struct.
+	 * @brief Default deconstructor of the wrapper struct for freeing the dynamic eigen matrix wrapped by the struct.
 	 */
 	~ceigen_matrix() = default;
 };
@@ -41,8 +41,8 @@ extern "C" {
 #endif
 
 ceigen_matrix_t* ceigen_new_matrix(
-	const int32_t rows,
-	const int32_t columns
+	const uint32_t rows,
+	const uint32_t columns
 ) {
 	// Create the struct with given size of the matrix.
 	return new ceigen_matrix(
@@ -58,13 +58,13 @@ void ceigen_delete_matrix(
 	delete matrix;
 }
 
-int32_t ceigen_get_matrix_rows(
+uint32_t ceigen_get_matrix_rows(
 	const ceigen_matrix_t* matrix
 ) {
 	return matrix->impl.rows();
 }
 
-int32_t ceigen_get_matrix_columns(
+uint32_t ceigen_get_matrix_columns(
 	const ceigen_matrix_t* matrix
 ) {
 	return matrix->impl.cols();
@@ -72,38 +72,38 @@ int32_t ceigen_get_matrix_columns(
 
 float_t ceigen_get_matrix_coefficient(
 	const ceigen_matrix_t*	matrix,
-	const int32_t			row,
-	const int32_t			column
+	const uint32_t			row,
+	const uint32_t			column
 ) {
 	// Get the value of the element at given row and column.
 	return matrix->impl(row, column);
 }
 
 void ceigen_set_matrix_coefficient(
-	ceigen_matrix_t*	matrix,
-	const int32_t		row,
-	const int32_t		column,
-	const float_t		value
+			ceigen_matrix_t*	matrix,
+	const	uint32_t			row,
+	const	uint32_t			column,
+	const	float_t				value
 ) {
 	// Set the value of the element at given row and column.
 	matrix->impl(row, column) = value;
 }
 
 void ceigen_add_matrix_coefficient(
-	ceigen_matrix_t*	matrix,
-	const int32_t		row,
-	const int32_t		column,
-	const float_t		value
+			ceigen_matrix_t*	matrix,
+	const	uint32_t			row,
+	const	uint32_t			column,
+	const	float_t				value
 ) {
 	// Add the value to the existing value of the element at given row and column.
 	matrix->impl(row, column) += value;
 }
 
 void ceigen_multiply_matrix_coefficient(
-	ceigen_matrix_t*	matrix,
-	const int32_t		row,
-	const int32_t		column,
-	const float_t		value
+			ceigen_matrix_t*	matrix,
+	const	uint32_t			row,
+	const	uint32_t			column,
+	const	float_t				value
 ) {
 	// Multiply the value to the existing value of the element at given row and column.
 	matrix->impl(row, column) *= value;
@@ -118,14 +118,14 @@ void ceigen_copy_matrix(
 }
 
 void ceigen_copy_matrix_block(
-	ceigen_matrix_t*	source_matrix,
-	const int32_t		from_row,
-	const int32_t		from_column,
-	const int32_t		to_row,
-	const int32_t		to_column,
-	const int32_t		rows,
-	const int32_t		columns,
-	ceigen_matrix_t*	destination_matrix
+	const	ceigen_matrix_t*	source_matrix,
+	const	uint32_t			from_row,
+	const	uint32_t			from_column,
+	const	uint32_t			to_row,
+	const	uint32_t			to_column,
+	const	uint32_t			rows,
+	const	uint32_t			columns,
+			ceigen_matrix_t*	destination_matrix
 ) {
 	// Copy a block of the source matrix to a block of the destination matrix.
 	destination_matrix->impl.block(
@@ -142,30 +142,39 @@ void ceigen_copy_matrix_block(
 }
 
 void ceigen_multiply_matrix(
-	const ceigen_matrix_t*	left_matrix,
-	const ceigen_matrix_t*	right_matrix,
-	ceigen_matrix_t*		destination_matrix
+	const	ceigen_matrix_t* left_matrix,
+	const	ceigen_matrix_t* right_matrix,
+			ceigen_matrix_t* destination_matrix
 ) {
 	// Multiply the left matrix and the right matrix, write the result to the destination matrix.
 	destination_matrix->impl = left_matrix->impl * right_matrix->impl;
 }
 
 void ceigen_add_matrix(
-	const ceigen_matrix_t*	left_matrix,
-	const ceigen_matrix_t*	right_matrix,
-	ceigen_matrix_t*		destination_matrix
+	const	ceigen_matrix_t* left_matrix,
+	const	ceigen_matrix_t* right_matrix,
+			ceigen_matrix_t* destination_matrix
 ) {
 	// Add the left matrix and the right matrix, write the result to the destination matrix.
 	destination_matrix->impl = left_matrix->impl + right_matrix->impl;
 }
 
 void ceigen_subtract_matrix(
-	const ceigen_matrix_t*	left_matrix,
-	const ceigen_matrix_t*	right_matrix,
-	ceigen_matrix_t*		destination_matrix
+	const	ceigen_matrix_t* left_matrix,
+	const	ceigen_matrix_t* right_matrix,
+			ceigen_matrix_t* destination_matrix
 ) {
 	// Subtract the left matrix and the right matrix, write the result to the destination matrix.
 	destination_matrix->impl = left_matrix->impl - right_matrix->impl;
+}
+
+void ceigen_cross_product3(
+	const	ceigen_matrix_t* left_vector,
+	const	ceigen_matrix_t* right_vector,
+			ceigen_matrix_t* destination_vector
+) {
+	// Treat the matrices as 3-dimensional column vectors then calculate the cross product.
+	destination_vector->impl.col(0).head<3>() = left_vector->impl.col(0).head<3>().cross(right_vector->impl.col(0).head<3>());
 }
 
 void ceigen_invert_matrix_in_place(
@@ -190,19 +199,19 @@ void ceigen_normalize_matrix_in_place(
 }
 
 void ceigen_multiply_matrix_scalar_in_place(
-	ceigen_matrix_t*	source_matrix,
-	const float_t		value
+			ceigen_matrix_t*	source_matrix,
+	const	float_t				value
 ) {
 	// Multiply the source matrix with the scalar value in place.
 	source_matrix->impl *= value;
 }
 
 uint8_t ceigen_solve_matrix_eigen(
-	const ceigen_matrix_t*	source_matrix,
-	ceigen_matrix_t*		destination_eigenvectors_real,
-	ceigen_matrix_t*		destination_eigenvectors_imag,
-	ceigen_matrix_t*		destination_eigenvalues_real,
-	ceigen_matrix_t*		destination_eigenvalues_imag
+	const	ceigen_matrix_t* source_matrix,
+			ceigen_matrix_t* destination_eigenvectors_real,
+			ceigen_matrix_t* destination_eigenvectors_imag,
+			ceigen_matrix_t* destination_eigenvalues_real,
+			ceigen_matrix_t* destination_eigenvalues_imag
 ) {
 	// Solve the eigenvectors and eigenvalues.
 	const EigenSolver<ceigen_matrix_impl> solver(source_matrix->impl);
@@ -214,7 +223,7 @@ uint8_t ceigen_solve_matrix_eigen(
 		const auto& eigenvalues		= solver.eigenvalues	();
 
 		// Write them to the matrix array in the struct.
-		for (int32_t i = 0; i < source_matrix->impl.rows(); i ++) {
+		for (uint32_t i = 0; i < source_matrix->impl.rows(); i ++) {
 			// Write the eigenvector.
 			destination_eigenvectors_real->impl.col(i) = eigenvectors.col(i).real(); // First column is the real part of the eigenvector.
 			destination_eigenvectors_imag->impl.col(i) = eigenvectors.col(i).imag(); // Second column is the imagine part of the eigenvector.

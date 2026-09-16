@@ -1,4 +1,14 @@
 dependencies:
+  ESP_FAST_LCD:
+    component_hash: 6722c0dcce46a3434c6aa646ed90ed307fff7482fe984dbc00ed7385330446ed
+    dependencies:
+    - name: idf
+      version: '>=5.0'
+    source:
+      git: https://github.com/Argon4W/ESP_FAST_LCD.git
+      path: .
+      type: git
+    version: eb7f9713efe9ebf6c011f64b47091a5ba515e4bb
   espressif/button:
     component_hash: a1f34e8ed2e61ffef1a230fd9477005c2db335c7e1f6a239f43e5f119dcbe1b0
     dependencies:
@@ -48,7 +58,7 @@ dependencies:
       type: git
     version: 02c5dcb8fa38c896892c940869c0f37ec691ece8
   magneto-pid:
-    component_hash: 580bc8dad407a59e14011c4cfb0be5bcaf36938206fd7e948cf2f8a22eac26f3
+    component_hash: 0b30e3cb5dfc31fbbcb4d72e7251a6d298ca73f4bc63894249762ea74a143334
     dependencies:
     - name: idf
       version: '>=5.0'
@@ -56,7 +66,7 @@ dependencies:
       git: https://github.com/Argon4W/magneto-pid.git
       path: .
       type: git
-    version: c150f4f2fde2669e53b32119d3538f9e2e591194
+    version: ab830053ee98c3c38c0d9eb270a3281354e3fbcc
   qmc6309-pid:
     component_hash: b282e168466a3fd3eb0388a7abf7342799ac0e18b7c9d8d4ee3e5c30f3976d12
     dependencies:
@@ -75,12 +85,13 @@ dependencies:
       type: service
     version: 1.0.1
 direct_dependencies:
+- ESP_FAST_LCD
 - espressif/button
 - espressif/eigen
 - lsm6dsv-pid
 - magneto-pid
 - qmc6309-pid
 - waveshare/esp_lcd_st7735
-manifest_hash: f0ff822dc374599362ef4ab5bbcd2ce70e55a32a17511e01352d831cb2431b46
+manifest_hash: a26b85a5aaee6ecae791e334e0981e8e1fb934a1d0b85798bd2184c9417e1226
 target: esp32s3
 version: 2.0.0

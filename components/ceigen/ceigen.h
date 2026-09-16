@@ -9,6 +9,9 @@
 extern "C" {
 #endif // __cplusplus
 
+/**
+ * @brief The opaque wrapped matrix type of CEigen.
+ */
 typedef struct ceigen_matrix ceigen_matrix_t;
 
 /**
@@ -18,8 +21,8 @@ typedef struct ceigen_matrix ceigen_matrix_t;
  * @retval			the created matrix.
  */
 ceigen_matrix_t* ceigen_new_matrix(
-	int32_t rows,
-	int32_t columns
+	uint32_t rows,
+	uint32_t columns
 );
 
 /**
@@ -35,7 +38,7 @@ void ceigen_delete_matrix(
  * @param matrix	the matrix to get the count of rows.
  * @return			count of rows of the matrix.
  */
-int32_t ceigen_get_matrix_rows(
+uint32_t ceigen_get_matrix_rows(
 	const ceigen_matrix_t* matrix
 );
 
@@ -44,7 +47,7 @@ int32_t ceigen_get_matrix_rows(
  * @param matrix	the matrix to get the count of columns.
  * @return			count of columns of the matrix.
  */
-int32_t ceigen_get_matrix_columns(
+uint32_t ceigen_get_matrix_columns(
 	const ceigen_matrix_t* matrix
 );
 
@@ -56,9 +59,9 @@ int32_t ceigen_get_matrix_columns(
  * @retval			the value of the element get from the matrix.
  */
 float_t ceigen_get_matrix_coefficient(
-	const ceigen_matrix_t*	matrix,
-	int32_t					row,
-	int32_t					column
+	const	ceigen_matrix_t*	matrix,
+			uint32_t			row,
+			uint32_t			column
 );
 
 /**
@@ -70,8 +73,8 @@ float_t ceigen_get_matrix_coefficient(
  */
 void ceigen_set_matrix_coefficient(
 	ceigen_matrix_t*	matrix,
-	int32_t				row,
-	int32_t				column,
+	uint32_t			row,
+	uint32_t			column,
 	float_t				value
 );
 
@@ -84,8 +87,8 @@ void ceigen_set_matrix_coefficient(
  */
 void ceigen_add_matrix_coefficient(
 	ceigen_matrix_t*	matrix,
-	int32_t				row,
-	int32_t				column,
+	uint32_t			row,
+	uint32_t			column,
 	float_t				value
 );
 
@@ -98,8 +101,8 @@ void ceigen_add_matrix_coefficient(
  */
 void ceigen_multiply_matrix_coefficient(
 	ceigen_matrix_t*	matrix,
-	int32_t				row,
-	int32_t				column,
+	uint32_t			row,
+	uint32_t			column,
 	float_t				value
 );
 
@@ -109,8 +112,8 @@ void ceigen_multiply_matrix_coefficient(
  * @param destination_matrix	destination matrix the values are copied to.
  */
 void ceigen_copy_matrix(
-	const ceigen_matrix_t*	source_matrix,
-	ceigen_matrix_t*		destination_matrix
+	const	ceigen_matrix_t* source_matrix,
+			ceigen_matrix_t* destination_matrix
 );
 
 /**
@@ -125,14 +128,14 @@ void ceigen_copy_matrix(
  * @param destination_matrix	destination matrix the block is copied to.
  */
 void ceigen_copy_matrix_block(
-	ceigen_matrix_t*	source_matrix,
-	int32_t				from_row,
-	int32_t				from_column,
-	int32_t				to_row,
-	int32_t				to_column,
-	int32_t				rows,
-	int32_t				columns,
-	ceigen_matrix_t*	destination_matrix
+	const	ceigen_matrix_t*	source_matrix,
+			uint32_t			from_row,
+			uint32_t			from_column,
+			uint32_t			to_row,
+			uint32_t			to_column,
+			uint32_t			rows,
+			uint32_t			columns,
+			ceigen_matrix_t*	destination_matrix
 );
 
 /**
@@ -142,9 +145,9 @@ void ceigen_copy_matrix_block(
  * @param destination_matrix	destination matrix to hold the result matrix.
  */
 void ceigen_multiply_matrix(
-	const ceigen_matrix_t*	left_matrix,
-	const ceigen_matrix_t*	right_matrix,
-	ceigen_matrix_t*		destination_matrix
+	const	ceigen_matrix_t* left_matrix,
+	const	ceigen_matrix_t* right_matrix,
+			ceigen_matrix_t* destination_matrix
 );
 
 /**
@@ -154,9 +157,9 @@ void ceigen_multiply_matrix(
  * @param destination_matrix	destination matrix to hold the result matrix.
  */
 void ceigen_add_matrix(
-	const ceigen_matrix_t*	left_matrix,
-	const ceigen_matrix_t*	right_matrix,
-	ceigen_matrix_t*		destination_matrix
+	const	ceigen_matrix_t* left_matrix,
+	const	ceigen_matrix_t* right_matrix,
+			ceigen_matrix_t* destination_matrix
 );
 
 /**
@@ -166,9 +169,22 @@ void ceigen_add_matrix(
  * @param destination_matrix	destination matrix to hold the result matrix.
 */
 void ceigen_subtract_matrix(
-	const ceigen_matrix_t*	left_matrix,
-	const ceigen_matrix_t*	right_matrix,
-	ceigen_matrix_t*		destination_matrix
+	const	ceigen_matrix_t* left_matrix,
+	const	ceigen_matrix_t* right_matrix,
+			ceigen_matrix_t* destination_matrix
+);
+
+/**
+ * @brief						Treat two existing matrices as 3-dimension column vectors, then calculate the cross product.
+ *								(destination_vector = cross(left_vector, right_vector))
+ * @param left_vector			the left vector of the cross product.
+ * @param right_vector			the right vector of the cross product.
+ * @param destination_vector	destination vector to hold the result vector.
+ */
+void ceigen_cross_product3(
+	const	ceigen_matrix_t* left_vector,
+	const	ceigen_matrix_t* right_vector,
+			ceigen_matrix_t* destination_vector
 );
 
 /**
@@ -216,11 +232,11 @@ void ceigen_multiply_matrix_scalar_in_place(
  * @retval								the status of the eigen solving result. ("0" = successful, other value = failed).
  */
 uint8_t ceigen_solve_matrix_eigen(
-	const ceigen_matrix_t*	source_matrix,
-	ceigen_matrix_t*		destination_eigenvectors_real,
-	ceigen_matrix_t*		destination_eigenvectors_imag,
-	ceigen_matrix_t*		destination_eigenvalues_real,
-	ceigen_matrix_t*		destination_eigenvalues_imag
+	const	ceigen_matrix_t* source_matrix,
+			ceigen_matrix_t* destination_eigenvectors_real,
+			ceigen_matrix_t* destination_eigenvectors_imag,
+			ceigen_matrix_t* destination_eigenvalues_real,
+			ceigen_matrix_t* destination_eigenvalues_imag
 );
 
 #ifdef __cplusplus

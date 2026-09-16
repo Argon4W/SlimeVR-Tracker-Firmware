@@ -2,44 +2,173 @@ menu "SlimeVR Tracker Firmware Configuration"
 
 	source "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
 
-	config DEBUG_LOGGING
-		bool "Enable debug logging"
+	config SLIME_DEBUG_LOGGING
+		bool "Enable Debug Logging"
 		default n
 		help
 			Enable this option will enable the output of debug logging.
 
-	config SENSOR_LED
-		int "Sensor LED GPIO Num"
-		range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
-		default 15
-		help
-			GPIO number for the LED.
+	menu "NVS Configuration"
 
-	menu "LCD Panel Configuration"
+		config SLIME_NVS_PARTITION
+			string "NVS Partition Name"
+			default "nvs"
+			help
+				The name of the partition of the NVS data.
 
-		config LCD_PANEL_BACKLIGHT
-			int "LCD Panel Backlight GPIO Num"
+		config SLIME_NVS_NAMESPACE
+			string "NVS Namespace"
+			default "slime_neo"
+			help
+				The namespace of the NVS data.
+
+		config SLIME_NVS_DEBUG_LOGGING
+			bool "Enable NVS Debug Logging"
+			default n
+			depends on SLIME_DEBUG_LOGGING
+			help
+				Enable this option will enable the output of NVS debug logging.
+
+	endmenu
+
+	menu "Button Configuration"
+
+		config SLIME_BUTTON_CLICK_TIME
+			int "Button Click Time"
+			range 1 1000
+			default 10
+			help
+				Pressing time in milliseconds to trigger a short-press click.
+
+		config SLIME_BUTTON_DISABLE_INTERNAL_PULL
+			bool "Disable Internal Pull-Up/Pull-Down"
+			default n
+			help
+				Disable internal pull-up/pull-down of the GPIO of the button.
+
+		config SLIME_BUTTON_ACTIVE_LEVEL
+			int "Button Active GPIO Level"
+			range 0 1
+			default 0
+			help
+				The GPIO level when the button is pressed down.
+
+		config SLIME_BUTTON_EVENT_QUEUE_SIZE
+			int "Button Event Queue Size"
+			range 0 100
+			default 16
+			help
+				The size of the button event queue.
+
+		config SLIME_BUTTON_RETURN
+			int "Return Button GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 0
+			help
+				GPIO number for the return button.
+
+		config SLIME_BUTTON_SWITCH
+			int "Switch Button GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 39
+			help
+				GPIO number for the switch button.
+
+		config SLIME_BUTTON_CONFIRM
+			int "Confirm Button GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 18
+			help
+				GPIO number for the confirm button.
+
+		config SLIME_BUTTON_DEBUG_LOGGING
+			bool "Enable Button Debug Logging"
+			default n
+			depends on SLIME_DEBUG_LOGGING
+			help
+				Enable this option will enable the output of button debug logging.
+
+	endmenu
+
+	menu "Screen Configuration"
+
+		config SLIME_SCREEN_TRANSMIT_TASK_FRAMERATE
+			int "Screen Framerate"
+			range 1 90
+			default 60
+			help
+				Framerate of the screen in FPS (frames-per-second).
+
+		config SLIME_SCREEN_TRANSMIT_TASK_CORE_ID
+			int "Transmission Task CPU Core ID"
+			default 1
+			help
+				The ID of the core running the screen transmission task.
+
+		config SLIME_SCREEN_TRANSMIT_TASK_STACK_DEPTH
+			int "Transmission Task Stack Depth"
+			default 4096
+			help
+				The stack depth of the screen transmission task.
+
+		config SLIME_SCREEN_TRANSMIT_TASK_PRIORITY
+			int "Transmission Task Priority"
+			default 1
+			help
+				The priority of the screen transmission task.
+
+		config SLIME_SCREEN_DEBUG_LOGGING
+			bool "Enable Screen Debug Logging"
+			default n
+			depends on SLIME_DEBUG_LOGGING
+			help
+				Enable this option will enable the output of screen debug logging.
+
+	endmenu
+
+	menu "GPIO Configuration"
+
+		config SLIME_GPIO_LED
+			int "Sensor LED GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 15
+			help
+				GPIO number for the LED.
+
+		config SLIME_GPIO_BACKLIGHT
+			int "Backlight GPIO Num"
 			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
 			default 21
 			help
 				GPIO number for the LCD panel backlight.
 
-		config LCD_PANEL_DC
+		config SLIME_GPIO_DEBUG_LOGGING
+			bool "Enable GPIO Debug Logging"
+			default n
+			depends on SLIME_DEBUG_LOGGING
+			help
+				Enable this option will enable the output of GPIO debug logging.
+
+	endmenu
+
+	menu "LCD Panel Configuration"
+
+		config SLIME_LCD_DC
 			int "LCD Panel DC GPIO Num"
 			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
 			default 13
 			help
 				GPIO number for the LCD to select the D/C line.
 
-		config LCD_PANEL_RES
+		config SLIME_LCD_RES
 			int "LCD Panel Reset GPIO Num"
 			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
 			default 14
 
-		config LCD_PANEL_DEBUG_LOGGING
-			bool "Enable LCD Panel debug logging"
+		config SLIME_LCD_DEBUG_LOGGING
+			bool "Enable LCD Panel Debug Logging"
 			default n
-			depends on DEBUG_LOGGING
+			depends on SLIME_DEBUG_LOGGING
 			help
 				Enable this option will enable the output of LCD Panel debug logging.
 
@@ -47,30 +176,30 @@ menu "SlimeVR Tracker Firmware Configuration"
 
 	menu "I2C Master Configuration"
 
-		config I2C_MASTER_SCL
+		config SLIME_I2C_MASTER_SCL
 			int "SCL GPIO Num"
 			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
 			default 17
 			help
 				GPIO number for I2C Master clock line.
 
-		config I2C_MASTER_SDA
+		config SLIME_I2C_MASTER_SDA
 			int "SDA GPIO Num"
 			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
 			default 16
 			help
 				GPIO number for I2C Master data line.
 
-		config I2C_MASTER_FREQUENCY
+		config SLIME_I2C_MASTER_FREQUENCY
 			int "Master Frequency"
 			default 400000
 			help
 				I2C Speed of Master Device.
 
-		config I2C_MASTER_DEBUG_LOGGING
-			bool "Enable I2C master debug logging"
+		config SLIME_I2C_MASTER_DEBUG_LOGGING
+			bool "Enable I2C master Debug Logging"
 			default n
-			depends on DEBUG_LOGGING
+			depends on SLIME_DEBUG_LOGGING
 			help
 				Enable this option will enable the output of I2C master debug logging.
 
@@ -78,36 +207,36 @@ menu "SlimeVR Tracker Firmware Configuration"
 
 	menu "SPI Bus Configuration"
 
-		config SPI_BUS_SCLK
+		config SLIME_SPI_BUS_SCLK
 		int "SCLK GPIO Num"
 			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
 			default 12
 			help
 				GPIO number for SPI Bus clock line.
 
-		config SPI_BUS_MOSI
+		config SLIME_SPI_BUS_MOSI
 			int "MOSI GPIO Num"
 			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
 			default 11
 			help
 				GPIO number for SPI Bus Master-Out-Slave-In line.
 
-		config SPI_BUS_FREQUENCY
+		config SLIME_SPI_BUS_FREQUENCY
 			int "SPI Bus Frequency"
 			default 20000000
 			help
 				Speed of SPI Bus.
 
-		config SPI_BUS_MAX_TRANSFER_SZ
+		config SLIME_SPI_BUS_MAX_TRANSFER_SZ
 			int "SPI Bus Maximum Transfer Size."
 			default 10368
 			help
 				Maximum transfer size of the SPI Bus, in bytes.
 
-		config SPI_BUS_DEBUG_LOGGING
-			bool "Enable SPI Bus debug logging"
+		config SLIME_SPI_BUS_DEBUG_LOGGING
+			bool "Enable SPI Bus Debug Logging"
 			default n
-			depends on DEBUG_LOGGING
+			depends on SLIME_DEBUG_LOGGING
 			help
 				Enable this option will enable the output of SPI bus debug logging.
 

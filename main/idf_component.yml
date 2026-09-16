@@ -8,5 +8,8 @@ dependencies:
   magneto-pid:
     git: https://github.com/Argon4W/magneto-pid.git
     version: '*'
+  ESP_FAST_LCD:
+    git: https://github.com/Argon4W/ESP_FAST_LCD.git
+    version: '*'
   waveshare/esp_lcd_st7735: ^1.0.0
   espressif/button: ^4.2.1

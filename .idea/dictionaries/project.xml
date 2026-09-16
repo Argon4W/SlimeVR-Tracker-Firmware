@@ -6,6 +6,7 @@
       <w>endmenu</w>
       <w>iram</w>
       <w>menuconfig</w>
+      <w>nrlf</w>
       <w>orsource</w>
       <w>psram</w>
       <w>reinterp</w>
