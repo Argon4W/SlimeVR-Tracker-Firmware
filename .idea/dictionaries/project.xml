@@ -2,12 +2,15 @@
   <dictionary name="project">
     <words>
       <w>ceigen</w>
+      <w>coeff</w>
       <w>endchoice</w>
       <w>endmenu</w>
       <w>iram</w>
+      <w>mdps</w>
       <w>menuconfig</w>
       <w>nrlf</w>
       <w>orsource</w>
+      <w>prixptr</w>
       <w>psram</w>
       <w>reinterp</w>
       <w>sclk</w>

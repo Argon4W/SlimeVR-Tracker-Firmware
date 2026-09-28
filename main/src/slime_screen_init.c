@@ -16,8 +16,8 @@ static void slime_screen_transmit_task(void* parameter);
 
 esp_err_t slime_screen_context_new(
 			slime_screen_context_t**		screen_context_out,
-			slime_lcd_context_t*			lcd_context,
-	const	slime_screen_context_config_t*	screen_context_config
+	const	slime_screen_context_config_t*	screen_context_config,
+			slime_lcd_context_t*			lcd_context
 ) {
 	esp_err_t ret = ESP_OK;
 
@@ -50,7 +50,7 @@ esp_err_t slime_screen_context_new(
 	// Create the fast LCD panel device.
 	ESP_GOTO_ON_ERROR(esp_fast_lcd_new_lcd_panel_device(
 		/* panel_device_ret				= */ &screen_fast_lcd_panel_device,
-		/* panel_device_configuration	= */ screen_context_config	->screen_fast_lcd_panel_config,
+		/* panel_device_configuration	= */ screen_context_config	->fast_lcd_panel_config,
 		/* panel_handle					= */ lcd_context			->panel_handle,
 		/* panel_io						= */ lcd_context			->panel_io_handle
 	), error, TAG, "Failed to create fast LCD panel device.");
@@ -63,8 +63,8 @@ esp_err_t slime_screen_context_new(
 	// Create the fast text engine instance.
 	ESP_GOTO_ON_ERROR(esp_fast_text_engine_new_text_engine_instance(
 		/* engine_instance_ret				= */ &screen_fast_text_engine_instance,
-		/* engine_instance_configuration	= */ screen_context_config->screen_fast_text_engine_instance_config,
-		/* engine_instance_font				= */ screen_context_config->screen_fast_text_engine_font
+		/* engine_instance_configuration	= */ screen_context_config->fast_text_engine_instance_config,
+		/* engine_instance_font				= */ screen_context_config->fast_text_engine_font
 	), error, TAG, "Failed to create fast text engine instance.");
 
 	// Log the progress if screen debug logging is enabled.
@@ -72,7 +72,7 @@ esp_err_t slime_screen_context_new(
 		ESP_LOGD(TAG, "Creating screen context struct.");
 	#endif // CONFIG_SLIME_SCREEN_DEBUG_LOGGING
 
-	// Allocate the screen context handle.
+	// Create the screen context handle.
 	screen_context = calloc(1, sizeof(slime_screen_context_t));
 
 	// Check the allocation.
@@ -88,7 +88,7 @@ esp_err_t slime_screen_context_new(
 	screen_context->fast_lcd_panel_device		= screen_fast_lcd_panel_device;
 	screen_context->fast_text_engine_instance	= screen_fast_text_engine_instance;
 	screen_context->transmit_task_handle		= screen_transmit_task_handle;
-	screen_context->transmit_framerate			= screen_context_config->screen_transmit_task_config.transmit_task_framerate;
+	screen_context->transmit_framerate			= screen_context_config->transmit_task_config.transmit_framerate;
 
 	// Log the progress if screen debug logging is enabled.
 	#ifdef CONFIG_SLIME_SCREEN_DEBUG_LOGGING
@@ -99,11 +99,11 @@ esp_err_t slime_screen_context_new(
 	ESP_GOTO_ON_FALSE(xTaskCreatePinnedToCore(
 		/* pxTaskCode		= */ slime_screen_transmit_task,
 		/* pcName			= */ "slime_screen_transmission_task",
-		/* usStackDepth		= */ screen_context_config->screen_transmit_task_config.transmit_task_stack_depth,
+		/* usStackDepth		= */ screen_context_config->transmit_task_config.task_stack_depth,
 		/* pvParameters		= */ screen_context,
-		/* uxPriority		= */ screen_context_config->screen_transmit_task_config.transmit_task_priority,
+		/* uxPriority		= */ screen_context_config->transmit_task_config.task_priority,
 		/* pxCreatedTask	= */ &screen_transmit_task_handle,
-		/* xCoreID			= */ screen_context_config->screen_transmit_task_config.transmit_task_core_id
+		/* xCoreID			= */ screen_context_config->transmit_task_config.task_core_id
 	) == pdPASS, ESP_ERR_INVALID_STATE, error, TAG, "Failed to create transmission task.");
 
 	// Log the progress if screen debug logging is enabled.
@@ -195,37 +195,37 @@ esp_err_t slime_screen_context_del(slime_screen_context_t* screen_context_in) {
 static void slime_screen_transmit_task(void* parameter) {
 	esp_err_t ret = ESP_OK;
 
-	// Get all necessary properties and handles for transmitting.
-	const slime_screen_context_t*		screen_context		= (slime_screen_context_t*) parameter;
-	const esp_fast_lcd_panel_device_t*	screen_panel_device	= screen_context->fast_lcd_panel_device;
-	const uint32_t						screen_framerate	= screen_context->transmit_framerate;
+	// Cache all necessary properties and handles for transmitting to stack.
+	const slime_screen_context_t*		screen_context	= (slime_screen_context_t*) parameter;
+	const esp_fast_lcd_panel_device_t*	panel_device	= screen_context->fast_lcd_panel_device;
+	const uint32_t						framerate		= screen_context->transmit_framerate;
 
 	// Calculate the wait period in FreeRTOS ticks.
-	const TickType_t period = pdMS_TO_TICKS (1000U / screen_framerate);
+	const TickType_t period = pdMS_TO_TICKS (1000U / framerate);
 
 	// Log if screen debug logging is enabled.
 	#ifdef CONFIG_SLIME_SCREEN_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Screen context will start to transmit pending frames every %" PRIu32 " tick(s).", period);
+		ESP_LOGD(TAG, "Screen context will start to transmit pending frames at %" PRIu32 " FPS (every %" PRIu32 " tick(s)).",
+			/* PRIu32 */ framerate,
+			/* PRIu32 */ period
+		);
 	#endif // CONFIG_SLIME_SCREEN_DEBUG_LOGGING
 
-	// Reserve the last awake time in ticks.
-	TickType_t last_awake_time = xTaskGetTickCount();
+	// Reserve the last wake time in ticks.
+	TickType_t last_wake_time = xTaskGetTickCount();
 
 	// Transmit the data.
 	while (true) {
 		// Delay before transmitting next pending frames.
-		TickType_t delayed = xTaskDelayUntil(&last_awake_time, period);
+		xTaskDelayUntil(&last_wake_time, period);
 
 		// Log if screen debug logging is enabled.
 		#ifdef CONFIG_SLIME_SCREEN_DEBUG_LOGGING
-			ESP_LOGD(TAG, "Screen context is transmitting a pending frame at tick %" PRIu32 ".", last_awake_time);
-			if (!last_delayed) {
-				ESP_LOGD(TAG, "Last pending frame took too long to transmit.");
-			}
+			ESP_LOGD(TAG, "Screen context is trying transmitting a pending frame at tick count %" PRIu32 ".", last_wake_time);
 		#endif // CONFIG_SLIME_SCREEN_DEBUG_LOGGING
 
 		// Transmit the pending frame
-		ESP_GOTO_ON_ERROR(esp_fast_lcd_transmit(screen_panel_device), error, TAG, "Failed to transmit pending frame");
+		ESP_GOTO_ON_ERROR(esp_fast_lcd_transmit(panel_device), error, TAG, "Failed to transmit pending frame.");
 	}
 
 	// Error occurred, terminate the transmission task.
@@ -234,6 +234,6 @@ static void slime_screen_transmit_task(void* parameter) {
 	// Log the error if screen debug logging is enabled.
 	#ifdef CONFIG_SLIME_SCREEN_DEBUG_LOGGING
 		ESP_LOGD(TAG, "Error occurred: %s", esp_err_to_name(ret));
-		ESP_LOGD(TAG, "Cleaning up resources.");
+		ESP_LOGD(TAG, "Terminating transmission task.");
 	#endif // CONFIG_SLIME_SCREEN_DEBUG_LOGGING
 }

@@ -10,28 +10,28 @@ extern "C" {
 #endif // __cplusplus
 
 /**
- * @brief The configuration struct of the NVS context.
- */
-typedef struct {
-	const	char*	nvs_partition; /*!< The partition name of the NVS context. */
-	const	char*	nvs_namespace; /*!< The namespace of the NVS context. */
-			uint8_t	nvs_skip_init; /*!< True if the NVS flash is already initialized. */
-} slime_nvs_context_config_t;
-
-/**
  * @brief The key struct of an NVS blob.
  */
 typedef struct {
-	const	char*	blob_name;		/*!< The name key of the blob. */
-	const	void*	blob_default;	/*!< The default data of the blob if not found. */
-			size_t	blob_size;		/*!< The size of the blob. */
+	const	char*	name;	/*!< The name key of the blob. */
+	const	void*	init;	/*!< The default initial value of the blob if not found or incompatible. */
+			size_t	size;	/*!< The size of the blob. */
 } slime_nvs_blob_key_t;
+
+/**
+ * @brief The configuration struct of the NVS context.
+ */
+typedef struct {
+	const char* partition; /*!< The partition name of the NVS context. */
+	const char* namespace; /*!< The namespace of the NVS context. */
+} slime_nvs_context_config_t;
 
 /**
  * @brief The NVS context struct.
  */
 typedef struct {
-	nvs_handle_t nvs_handle; /*!< The NVS handle of the NVS context. */
+	const	char*			partition;		/*!< The partition name of the NVS context. */
+			nvs_handle_t	nvs_handle;		/*!< The NVS handle of the NVS context. */
 } slime_nvs_context_t;
 
 /**

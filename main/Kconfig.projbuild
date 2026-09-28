@@ -133,14 +133,35 @@ menu "SlimeVR Tracker Firmware Configuration"
 			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
 			default 15
 			help
-				GPIO number for the LED.
+				Output GPIO number for the LED.
 
 		config SLIME_GPIO_BACKLIGHT
 			int "Backlight GPIO Num"
 			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
 			default 21
 			help
-				GPIO number for the LCD panel backlight.
+				Output GPIO number for the LCD panel backlight.
+
+		config SLIME_GPIO_SENSOR_BOARD_ID_BIT_0
+			int "Sensor Board ID Bit 0 GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 5
+			help
+				Input GPIO number for the Bit 0 of the Sensor Board ID.
+
+		config SLIME_GPIO_SENSOR_BOARD_ID_BIT_1
+			int "Sensor Board ID Bit 1 GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 6
+			help
+				Input GPIO number for the Bit 1 of the Sensor Board ID.
+
+		config SLIME_GPIO_SENSOR_BOARD_ID_BIT_2
+			int "Sensor Board ID Bit 2 GPIO Num"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 7
+			help
+				Input GPIO number for the Bit 2 of the Sensor Board ID.
 
 		config SLIME_GPIO_DEBUG_LOGGING
 			bool "Enable GPIO Debug Logging"

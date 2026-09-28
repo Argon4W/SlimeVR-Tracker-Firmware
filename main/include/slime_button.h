@@ -26,9 +26,9 @@ typedef struct {
  * @brief The configuration struct of the button context.
  */
 typedef struct {
-	slime_button_config_t	button_return_config;		/*!< The configuration of the return button */
-	slime_button_config_t	button_switch_config;		/*!< The configuration of the switch button */
-	slime_button_config_t	button_confirm_config;		/*!< The configuration of the confirm button */
+	slime_button_config_t	return_button_config;		/*!< The configuration of the return button */
+	slime_button_config_t	switch_button_config;		/*!< The configuration of the switch button */
+	slime_button_config_t	confirm_button_config;		/*!< The configuration of the confirm button */
 	uint32_t				button_event_queue_size;	/*!< The size of the button event queue. */
 } slime_button_context_config_t;
 
@@ -43,15 +43,28 @@ typedef enum {
 } slime_button_type_t;
 
 /**
- * @brief The button context struct.
+ * @brief The button context struct declaration.
+ */
+typedef struct slime_button_context slime_button_context_t;
+
+/**
+ * @brief The button callback context struct.
  */
 typedef struct {
-	button_handle_t		button_return;				/*!< The return IOT button handle */
-	button_handle_t		button_switch;				/*!< The switch IOT button handle. */
-	button_handle_t		button_confirm;				/*!< The confirm IOT button handle. */
-	QueueHandle_t		button_event_queue;			/*!< The button event queue. */
-	void*				button_callback_contexts;	/*!< The internal button callback contexts. */
-} slime_button_context_t;
+	slime_button_context_t*	button_context; /*!< The button context of the callback. */
+	slime_button_type_t		button_type;	/*!< The button type of the callback. */
+} slime_button_callback_context_t;
+
+/**
+ * @brief The button context struct implementation.
+ */
+struct slime_button_context {
+	button_handle_t						return_button_handle;	/*!< The return IOT button handle */
+	button_handle_t						switch_button_handle;	/*!< The switch IOT button handle. */
+	button_handle_t						confirm_button_handle;	/*!< The confirm IOT button handle. */
+	QueueHandle_t						button_event_queue;		/*!< The button event queue. */
+	slime_button_callback_context_t*	callback_contexts;		/*!< The internal button callback contexts. */
+};
 
 /**
  * @brief					Get an event from the button event queue of the button context, or BUTTON_NULL if there is no event.

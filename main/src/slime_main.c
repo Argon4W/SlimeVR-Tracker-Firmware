@@ -10,7 +10,7 @@
 #include "qmc6309_reg.h"
 #include "slime_main.h"
 
-#include <slime_nvs.h>
+static const char* TAG = "slime_main";
 
 static const uint16_t logo_bitmap_data[5184] = {
 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x6B4D, 0x39E7, 0x39E7, 0x5AEB, 0x4208, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7, 0x39E7,
@@ -70,179 +70,293 @@ static const uint16_t logo_bitmap_data[5184] = {
 };
 
 static const slime_screen_bitmap_info_t logo_bitmap = {
-	.bitmap_color_type	= RGB565,
-	.bitmap_optimized	= false,
-	.bitmap_size_x		= 96,
+	.data_color_type	= RGB565,
+	.data_optimized		= false,
+	.data_size_x		= 96,
 	.bitmap_data_0		= logo_bitmap_data,
 	.bitmap_data_1		= NULL
 };
 
-static const char* TAG = "slime_main";
-
-static const char* nvs_namespace = "slime_neo";
-
-const static qmc6309_setup_t qmc6309Setup = {
-	.mode			= NORMAL,
-	.set_reset_mode	= SET_RESET_ON,
-	.rng			= RNG_8G,
-	.odr			= ODR_200HZ,
-	.osr1			= OSR1_8,
-	.osr2			= OSR2_8
+// The green text style for normal display.
+slime_screen_text_style_t text_style_green = {
+	.color_type		= RGBA8888,
+	.color_text		= 0x00FF00FFU,
+	.color_outline	= 0x007F00FFU,
+	.outlined		= true
 };
 
-static lsm6dsv_sh_cfg_read_t qmc6309StatusReadConfig = {
-	.slv_add	= QMC6309_I2C_ADDRESS << 1,
-	.slv_subadd	= QMC6309_STATUS_1,
-	.slv_len	= 1
+// The red text style for important notices.
+slime_screen_text_style_t text_style_red = {
+	.color_type		= RGBA8888,
+	.color_text		= 0xFF0000FFU,
+	.color_outline	= 0x7F0000FFU,
+	.outlined		= true
 };
 
-static lsm6dsv_sh_cfg_read_t qmc6309OutputReadConfig = {
-	.slv_add	= QMC6309_I2C_ADDRESS << 1,
-	.slv_subadd	= QMC6309_OUT_X_L,
-	.slv_len	= 6
+// The yellow text style for warnings.
+slime_screen_text_style_t text_style_yellow = {
+	.color_type		= RGBA8888,
+	.color_text		= 0xFFFF00FFU,
+	.color_outline	= 0x7F7F00FFU,
+	.outlined		= true
 };
 
-void cross(
-	const	float a_in	[3],
-	const	float b_in	[3],
-			float c_out	[3]
+typedef struct {
+	slime_magneto_context_t*	magneto_context;
+	vqf_context_t*				vqf_context;
+	ceigen_matrix_handle_t		gyroscope;
+	ceigen_matrix_handle_t		accelerometer;
+	ceigen_matrix_handle_t		magnetometer;
+	ceigen_matrix_handle_t		magneto;
+	ceigen_matrix_handle_t		euler_angles;
+	ceigen_matrix_handle_t		rotation_matrix;
+	ceigen_quaternion_handle_t	quaternion;
+	uint8_t						calibrating;
+} slime_main_context_t;
+
+void slime_main_on_gyroscope(
+	const	slime_sensor_context_t*	sensor_context,
+	const	float_t					gyroscope_dps_x,
+	const	float_t					gyroscope_dps_y,
+	const	float_t					gyroscope_dps_z,
+			void*					user_context
 ) {
-	c_out[0] = a_in[1] * b_in[2] - a_in[2] * b_in[1];
-	c_out[1] = a_in[2] * b_in[0] - a_in[0] * b_in[2];
-	c_out[2] = a_in[0] * b_in[1] - a_in[1] * b_in[0];
+	// Get the handles of vectors from the main context.
+	const slime_main_context_t* main_context = (slime_main_context_t*) user_context;
+
+	// Load the raw gyroscope output to the CEigen vector.
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 0U, 0U,	gyroscope_dps_y / 1000.0f * (M_PI / 180.f));
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 1U, 0U,	gyroscope_dps_x / 1000.0f * (M_PI / 180.f));
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 2U, 0U, -gyroscope_dps_z / 1000.0f * (M_PI / 180.f));
+
+	// Skip if calibrating.
+	if (!main_context->calibrating) {
+		// Performs gyroscope update step of VQF.
+		vqf_update_gyr(
+			/* vqf_context	= */ main_context->vqf_context,
+			/* gyr			= */ main_context->gyroscope
+		);
+	}
 }
 
-// Common function of delay in milliseconds
-void delay_milliseconds(uint32_t milliseconds) {
-	vTaskDelay(pdMS_TO_TICKS(milliseconds));
+void slime_main_on_accelerometer(
+	const	slime_sensor_context_t*	sensor_context,
+	const	float_t					accelerometer_mg_x,
+	const	float_t					accelerometer_mg_y,
+	const	float_t					accelerometer_mg_z,
+			void*					user_context
+) {
+	// Get the handles of vectors from the main context.
+	const slime_main_context_t* main_context = (slime_main_context_t*) user_context;
+
+	// Load the raw accelerometer output to the CEigen vector.
+	ceigen_set_matrix_coefficient(main_context->accelerometer, 0U, 0U,	accelerometer_mg_y * 0.00980665f);
+	ceigen_set_matrix_coefficient(main_context->accelerometer, 1U, 0U,	accelerometer_mg_x * 0.00980665f);
+	ceigen_set_matrix_coefficient(main_context->accelerometer, 2U, 0U, -accelerometer_mg_z * 0.00980665f);
+
+	// Skip if calibrating.
+	if (!main_context->calibrating) {
+		// Performs accelerometer update step of VQF.
+		vqf_update_acc(
+			/* vqf_context	= */ main_context->vqf_context,
+			/* acc			= */ main_context->accelerometer
+		);
+	}
 }
+
+void slime_main_on_magnetometer(
+	const	slime_sensor_context_t*	sensor_context,
+	const	float_t					magnetometer_gauss_x,
+	const	float_t					magnetometer_gauss_y,
+	const	float_t					magnetometer_gauss_z,
+			void*					user_context
+) {
+	slime_main_context_t*		main_context	= (slime_main_context_t*) user_context;
+	slime_magneto_context_t*	magneto_context	= main_context->magneto_context;
+
+	if (main_context->calibrating) {
+		if (magneto_context->sample_container->sample_norm_count < 45U * 50U) {
+			// Collect the raw magnetometer output samples if the sample count is not enough.
+			slime_magneto_collect_sample(
+				/* magneto_context	= */ magneto_context,
+				/* sample_x			= */ magnetometer_gauss_x,
+				/* sample_y			= */ magnetometer_gauss_y,
+				/* sample_z			= */ magnetometer_gauss_z
+			);
+			ESP_LOGI(TAG, "Magnetometer calibration raw data output: %.2f, %.2f, %.2f",
+				/* f */ magnetometer_gauss_x,
+				/* f */ magnetometer_gauss_y,
+				/* f */ magnetometer_gauss_z
+			);
+		} else {
+			// If the sample count is enough, calculate the calibration coefficients.
+			slime_magneto_calculate_calibration_coefficients(magneto_context);
+
+			// Stop calibrating.
+			main_context->calibrating = false;
+		}
+	} else if (main_context->magneto_context->valid) {
+		// Load the raw magnetometer data into the magneto calibration input vector.
+		ceigen_set_matrix_coefficient(main_context->magnetometer, 0U, 0U, magnetometer_gauss_x);
+		ceigen_set_matrix_coefficient(main_context->magnetometer, 1U, 0U, magnetometer_gauss_y);
+		ceigen_set_matrix_coefficient(main_context->magnetometer, 2U, 0U, magnetometer_gauss_z);
+
+		// Apply the calibration coefficients to the raw magnetometer output.
+		slime_magneto_apply_calibration_coefficients(
+			/* magneto_context	= */ magneto_context,
+			/* src_vector		= */ main_context->magnetometer,
+			/* dst_vector		= */ main_context->magnetometer
+		);
+
+		const float_t calibrated_magnetometer_gauss_x = ceigen_get_matrix_coefficient(main_context->magnetometer, 0U, 0U);
+		const float_t calibrated_magnetometer_gauss_y = ceigen_get_matrix_coefficient(main_context->magnetometer, 1U, 0U);
+		const float_t calibrated_magnetometer_gauss_z = ceigen_get_matrix_coefficient(main_context->magnetometer, 2U, 0U);
+
+		ceigen_set_matrix_coefficient(main_context->magneto, 0U, 0U,	calibrated_magnetometer_gauss_y);
+		ceigen_set_matrix_coefficient(main_context->magneto, 1U, 0U,	calibrated_magnetometer_gauss_x);
+		ceigen_set_matrix_coefficient(main_context->magneto, 2U, 0U, -	calibrated_magnetometer_gauss_z);
+
+		// Performs magnetometer update step of VQF.
+		vqf_update_mag(
+			/* vqf_context	= */ main_context->vqf_context,
+			/* mag			= */ main_context->magneto
+		);
+	}
+}
+
+static const vqf_linear_algebra_t slime_vqf_linear_algebra = {
+	.new_matrix								= ceigen_new_matrix,
+	.delete_matrix							= ceigen_delete_matrix,
+	.get_matrix_coefficient					= ceigen_get_matrix_coefficient,
+	.set_matrix_coefficient					= ceigen_set_matrix_coefficient,
+	.add_matrix_coefficient					= ceigen_add_matrix_coefficient,
+	.copy_matrix							= ceigen_copy_matrix,
+	.multiply_matrix						= ceigen_multiply_matrix,
+	.add_matrix								= ceigen_add_matrix,
+	.subtract_matrix						= ceigen_subtract_matrix,
+	.invert_matrix_in_place					= ceigen_invert_matrix_in_place,
+	.transpose_matrix_in_place				= ceigen_transpose_matrix_in_place,
+	.normalize_matrix_in_place				= ceigen_normalize_matrix_in_place,
+	.multiply_matrix_scalar_in_place		= ceigen_multiply_matrix_scalar_in_place,
+	.set_matrix_zeros_in_place				= ceigen_set_matrix_zeros_in_place,
+	.set_matrix_scaled_identity_in_place	= ceigen_set_matrix_scaled_identity_in_place,
+	.get_vector_norm						= ceigen_get_vector_norm,
+	.get_vector_squared_norm				= ceigen_get_vector_squared_norm,
+	.clip_vector_in_place					= ceigen_clip_vector_in_place,
+	.new_matrix_double						= ceigen_new_matrix_double,
+	.delete_matrix_double					= ceigen_delete_matrix_double,
+	.get_matrix_double_coefficient			= ceigen_get_matrix_double_coefficient,
+	.set_matrix_double_coefficient			= ceigen_set_matrix_double_coefficient,
+	.add_matrix_double_coefficient			= ceigen_add_matrix_double_coefficient,
+	.copy_matrix_double						= ceigen_copy_matrix_double,
+	.add_matrix_double						= ceigen_add_matrix_double,
+	.accumulate_matrix_double				= ceigen_accumulate_matrix_double,
+	.multiply_matrix_double_scalar_in_place	= ceigen_multiply_matrix_double_scalar_in_place,
+	.set_matrix_double_zeros_in_place		= ceigen_set_matrix_double_zeros_in_place,
+	.set_matrix_double_constants_in_place	= ceigen_set_matrix_double_constants_in_place,
+	.copy_matrix_to_matrix_double			= ceigen_copy_matrix_to_matrix_double,
+	.copy_matrix_double_to_matrix			= ceigen_copy_matrix_double_to_matrix,
+	.new_quaternion							= ceigen_new_quaternion,
+	.delete_quaternion						= ceigen_delete_quaternion,
+	.set_quaternion_w						= ceigen_set_quaternion_w,
+	.set_quaternion_x						= ceigen_set_quaternion_x,
+	.set_quaternion_y						= ceigen_set_quaternion_y,
+	.set_quaternion_z						= ceigen_set_quaternion_z,
+	.copy_quaternion						= ceigen_copy_quaternion,
+	.multiply_quaternion					= ceigen_multiply_quaternion,
+	.rotate_quaternion_around_z				= ceigen_rotate_quaternion_around_z,
+	.set_quaternion_rotation				= ceigen_set_quaternion_rotation,
+	.quaternion_rotate_vector				= ceigen_quaternion_rotate_vector,
+	.quaternion_to_rotation_matrix			= ceigen_quaternion_to_rotation_matrix,
+	.normalize_quaternion_in_place			= ceigen_normalize_quaternion_in_place,
+	.set_quaternion_identity_in_place		= ceigen_set_quaternion_identity_in_place
+};
 
 void app_main(void) {
-	esp_err_t ret = ESP_OK;
+	slime_sensor_error_t	err = SLIME_SENSOR_OK();
+	esp_err_t				ret = ESP_OK;
 
-	slime_nvs_context_t*	nvs_context		= NULL;
-	slime_gpio_context_t*	gpio_context	= NULL;
-	slime_i2c_context_t*	i2c_context		= NULL;
-	slime_lcd_context_t*	lcd_context		= NULL;
-	slime_screen_context_t*	screen_context	= NULL;
-	slime_button_context_t*	button_context	= NULL;
-
-	stmdev_ctx_t*				lsm6dsv_context					= NULL;
-	qmc_context_t*				qmc6309_context					= NULL;
-	magneto_sample_container_t*	magneto_sample_container		= NULL;
-	magneto_matrix_t*			magneto_soft_iron_matrix		= NULL;
-	magneto_matrix_t*			magneto_hard_iron_vector		= NULL;
-	magneto_matrix_t*			magneto_input_vector			= NULL;
-	magneto_matrix_t*			magneto_output_vector_unbiased	= NULL;
-	magneto_matrix_t*			magneto_output_vector			= NULL;
-
-	uint8_t magneto_calibrating	= 0u;
-	uint8_t magneto_calibrated	= 0U;
-	uint8_t lsm6dsv_chip_id		= 0x00U;
-	uint8_t qmc6309_chip_id		= 0x00U;
+	vqf_context_t*				vqf_context		= NULL;
+	slime_nvs_context_t*		nvs_context		= NULL;
+	slime_gpio_context_t*		gpio_context	= NULL;
+	slime_i2c_context_t*		i2c_context		= NULL;
+	slime_lcd_context_t*		lcd_context		= NULL;
+	slime_screen_context_t*		screen_context	= NULL;
+	slime_button_context_t*		button_context	= NULL;
+	slime_magneto_context_t*	magneto_context	= NULL;
+	slime_sensor_context_t*		sensor_context	= NULL;
 
 	uint32_t loop_frame = 0U;
 
-	float_t magneto_output	[3] = {0.0f, 0.0f, 0.0f};
-	float_t north_output	[3] = {0.0f, 0.0f, 0.0f};
+	slime_main_context_t*		main_context	= NULL;
+	ceigen_matrix_handle_t		gyroscope		= NULL;
+	ceigen_matrix_handle_t		accelerometer	= NULL;
+	ceigen_matrix_handle_t		magnetometer	= NULL;
+	ceigen_matrix_handle_t		magneto			= NULL;
+	ceigen_matrix_handle_t		euler_angles	= NULL;
+	ceigen_matrix_handle_t		rotation_matrix	= NULL;
+	ceigen_quaternion_handle_t	quaternion		= NULL;
+	ceigen_quaternion_handle_t	ned_to_enu		= NULL;
 
-	ESP_GOTO_ON_ERROR(slime_nvs_context_new		(&nvs_context,						&nvs_context_config),		error, TAG, "Failed to create NVS context.");
-	ESP_GOTO_ON_ERROR(slime_gpio_context_new	(&gpio_context,						&gpio_context_config),		error, TAG, "Failed to create GPIO context.");
-	ESP_GOTO_ON_ERROR(slime_i2c_context_new		(&i2c_context,						&i2c_context_config),		error, TAG, "Failed to create I2C context.");
-	ESP_GOTO_ON_ERROR(slime_lcd_context_new		(&lcd_context,		gpio_context,	&lcd_context_config),		error, TAG, "Failed to create LCD context.");
-	ESP_GOTO_ON_ERROR(slime_screen_context_new	(&screen_context,	lcd_context,	&screen_context_config),	error, TAG, "Failed to create screen context.");
-	ESP_GOTO_ON_ERROR(slime_button_context_new	(&button_context,					&button_context_config),	error, TAG, "Failed to create button context.");
+	ESP_GOTO_ON_ERROR(					slime_nvs_context_new		(&nvs_context,		&nvs_context_config),									error, TAG, "Failed to create NVS context.");
+	ESP_GOTO_ON_ERROR(					slime_gpio_context_new		(&gpio_context,		&gpio_context_config),									error, TAG, "Failed to create GPIO context.");
+	ESP_GOTO_ON_ERROR(					slime_i2c_context_new		(&i2c_context,		&i2c_context_config),									error, TAG, "Failed to create I2C context.");
+	ESP_GOTO_ON_ERROR(					slime_lcd_context_new		(&lcd_context,		&lcd_context_config,	gpio_context),					error, TAG, "Failed to create LCD context.");
+	ESP_GOTO_ON_ERROR(					slime_screen_context_new	(&screen_context,	&screen_context_config,	lcd_context),					error, TAG, "Failed to create screen context.");
+	ESP_GOTO_ON_ERROR(					slime_button_context_new	(&button_context,	&button_context_config),								error, TAG, "Failed to create button context.");
+	ESP_GOTO_ON_ERROR(					slime_magneto_context_new	(&magneto_context,	&slime_magneto_context_config, nvs_context),			error, TAG, "Failed to create magneto context.");
+	ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(	slime_sensor_context_new	(&sensor_context,	slime_sensor_type_table, gpio_context, i2c_context)),	error, TAG, "Failed to create sensor context.");
 
-	lsm6dsv_context = calloc(1U, sizeof(stmdev_ctx_t));
-	qmc6309_context = calloc(1U, sizeof(qmc_context_t));
+	vqf_context		= vqf_context_new		(&slime_vqf_linear_algebra, &vqf_params_default, 1.0f / 240.0f, 1.0f / 120.0f, 1.0f / 50.0f);
+	main_context	= calloc				(1U, sizeof(slime_main_context_t));
+	gyroscope		= ceigen_new_matrix		(3U, 1U);
+	accelerometer	= ceigen_new_matrix		(3U, 1U);
+	magnetometer	= ceigen_new_matrix		(3U, 1U);
+	magneto			= ceigen_new_matrix		(3U, 1U);
+	euler_angles	= ceigen_new_matrix		(3U, 1U);
+	rotation_matrix	= ceigen_new_matrix		(3U, 3U);
+	quaternion		= ceigen_new_quaternion	();
+	ned_to_enu		= ceigen_new_quaternion	();
 
-	ESP_GOTO_ON_FALSE(lsm6dsv_context != NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create LSM6DSV context.");
-	ESP_GOTO_ON_FALSE(qmc6309_context != NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create QMC6309 context.");
+	ESP_GOTO_ON_FALSE(vqf_context		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create VQF context.");
+	ESP_GOTO_ON_FALSE(main_context		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create main context.");
+	ESP_GOTO_ON_FALSE(gyroscope			!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create gyroscope vector.");
+	ESP_GOTO_ON_FALSE(accelerometer		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create accelerometer vector.");
+	ESP_GOTO_ON_FALSE(magnetometer		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create magnetometer vector.");
+	ESP_GOTO_ON_FALSE(magneto			!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create magneto vector.");
+	ESP_GOTO_ON_FALSE(euler_angles		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create euler angles vector.");
+	ESP_GOTO_ON_FALSE(rotation_matrix	!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create rotation matrix.");
+	ESP_GOTO_ON_FALSE(quaternion		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create quaternion.");
+	ESP_GOTO_ON_FALSE(ned_to_enu		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create coordinate system conversion quaternion.");
 
-	magneto_sample_container		= magneto_new_sample_container(&slime_magneto_linear_algebra_context);
-	magneto_soft_iron_matrix		= slime_magneto_new_matrix(3, 3);
-	magneto_hard_iron_vector		= slime_magneto_new_matrix(3, 1);
-	magneto_input_vector			= slime_magneto_new_matrix(3, 1);
-	magneto_output_vector_unbiased	= slime_magneto_new_matrix(3, 1);
-	magneto_output_vector			= slime_magneto_new_matrix(3, 1);
+	ceigen_set_quaternion_w(ned_to_enu, 0);
+	ceigen_set_quaternion_x(ned_to_enu, M_SQRT1_2);
+	ceigen_set_quaternion_y(ned_to_enu, M_SQRT1_2);
+	ceigen_set_quaternion_w(ned_to_enu, 0);
 
-	slime_magneto_blob_t slime_magneto_blob = {0};
+	const slime_sensor_callbacks_config_t sensor_callbacks = {
+		.timestamp_callback		= NULL,
+		.gyroscope_callback		= slime_main_on_gyroscope,
+		.accelerometer_callback	= slime_main_on_accelerometer,
+		.magnetometer_callback	= slime_main_on_magnetometer
+	};
 
-	ESP_GOTO_ON_ERROR(slime_nvs_load_blob(
-		/* nvs_context	= */ nvs_context,
-		/* nvs_blob_key	= */ &slime_magneto_blob_key,
-		/* nvs_blob_out	= */ &slime_magneto_blob
-	), error, TAG, "Failed to load magneto calibration data blob from the NVS context.");
+	ESP_GOTO_ON_ERROR(slime_sensor_register_callbacks(
+		/* sensor_context	= */ sensor_context,
+		/* sensor_callbacks	= */ &sensor_callbacks,
+		/* user_context		= */ main_context
+	), error, TAG, "Failed to register accelerometer FIFO callback.");
 
-	// Load the calibration state from the blob.
-	magneto_calibrated = slime_magneto_blob.magneto_calibrated;
-
-	// Fill the soft iron matrix and with the soft iron matrix data in the blob.
-	for		(uint32_t row = 0; row < 3; row ++) {
-		for	(uint32_t col = 0; col < 3; col ++) {
-			slime_magneto_set_matrix_coefficient(
-				/* matrix	= */ magneto_soft_iron_matrix,
-				/* row		= */ row,
-				/* column	= */ col,
-				/* value	= */ slime_magneto_blob.magneto_soft_iron_matrix[row * 3 + col]
-			);
-		}
-	}
-
-	// Fill the hard iron vector with the hard iron vector data in the blob.
-	slime_magneto_set_matrix_coefficient(magneto_hard_iron_vector, 0, 0, slime_magneto_blob.magneto_hard_iron_vector[0]); // Load the X-axis hard iron bias.
-	slime_magneto_set_matrix_coefficient(magneto_hard_iron_vector, 1, 0, slime_magneto_blob.magneto_hard_iron_vector[1]); // Load the Y-axis hard iron bias.
-	slime_magneto_set_matrix_coefficient(magneto_hard_iron_vector, 2, 0, slime_magneto_blob.magneto_hard_iron_vector[2]); // Load the Z-axis hard iron bias.
-
-	qmc6309_context->delay_milliseconds	= delay_milliseconds;
-	qmc6309_context->write_register		= slime_i2c_write_register;
-	qmc6309_context->read_register		= slime_i2c_read_register;
-	qmc6309_context->user_handle		= i2c_context->i2c_mag_device_handle;
-
-	lsm6dsv_context->mdelay		= delay_milliseconds;
-	lsm6dsv_context->write_reg	= slime_i2c_write_register;
-	lsm6dsv_context->read_reg	= slime_i2c_read_register;
-	lsm6dsv_context->handle		= i2c_context->i2c_imu_device_handle;
-
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sw_por							(lsm6dsv_context),						error, TAG, "Failed to soft reset LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_master_interface_pull_up_set	(lsm6dsv_context, PROPERTY_DISABLE),	error, TAG, "Failed to disable master I2C internal pull-up of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_master_set						(lsm6dsv_context, PROPERTY_DISABLE),	error, TAG, "Failed to disable master I2C of LSM6DSV.");
-
-	delay_milliseconds(300U);
-
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_pass_through_set(lsm6dsv_context, PROPERTY_ENABLE), error, TAG, "Failed to enable I2C passthrough of LSM6DSV.");
-
-	delay_milliseconds(300U);
-
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_device_id_get		(lsm6dsv_context, &lsm6dsv_chip_id),		error, TAG, "Failed to read device ID of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) qmc6309_raw_chip_id_get	(qmc6309_context, &qmc6309_chip_id),		error, TAG, "Failed to read chip ID of QMC6309.");
-
-	ESP_GOTO_ON_FALSE((lsm6dsv_chip_id == LSM6DSV_ID),			ESP_ERR_INVALID_RESPONSE, error, TAG, "Wrong LSM6DSV ID: 0x%02" PRIX8, lsm6dsv_chip_id);
-	ESP_GOTO_ON_FALSE((qmc6309_chip_id == QMC6309_CHIP_ID_REF),	ESP_ERR_INVALID_RESPONSE, error, TAG, "Wrong QMC6309 ID: 0x%02" PRIX8, qmc6309_chip_id);
-
-	ESP_GOTO_ON_ERROR((esp_err_t) qmc6309_hl_soft_reset	(qmc6309_context),					error, TAG, "Failed to setup QMC6309.");
-	ESP_GOTO_ON_ERROR((esp_err_t) qmc6309_hl_setup		(qmc6309_context, qmc6309Setup),	error, TAG, "Failed to setup QMC6309.");
-
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_pass_through_set	(lsm6dsv_context, PROPERTY_DISABLE),			error, TAG, "Failed to disable I2C passthrough of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_slv_cfg_read		(lsm6dsv_context, 0, &qmc6309StatusReadConfig),	error, TAG, "Failed to setup sensor hub QMC6309 status register read of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_slv_cfg_read		(lsm6dsv_context, 1, &qmc6309OutputReadConfig),	error, TAG, "Failed to setup sensor hub QMC6309 output registers read of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_data_rate_set		(lsm6dsv_context, LSM6DSV_SH_60Hz),				error, TAG, "Failed to set sensor hub data rate of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_slave_connected_set(lsm6dsv_context, LSM6DSV_SLV_0_1),				error, TAG, "Failed to set slave connected state of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_write_mode_set		(lsm6dsv_context, LSM6DSV_ONLY_FIRST_CYCLE),	error, TAG, "Failed to set sensor hub write mode of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_master_set			(lsm6dsv_context, PROPERTY_ENABLE),				error, TAG, "Failed to enable master I2C of LSM6DSV.");
-
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_block_data_update_set	(lsm6dsv_context, PROPERTY_ENABLE),				error, TAG, "Failed to enable block data update of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_gy_full_scale_set		(lsm6dsv_context, LSM6DSV_1000dps),				error, TAG, "Failed to set gyroscope full scale range of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_xl_full_scale_set		(lsm6dsv_context, LSM6DSV_4g),					error, TAG, "Failed to set accelerometer full scale range of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_gy_data_rate_set		(lsm6dsv_context, LSM6DSV_ODR_HA01_AT_1000Hz),	error, TAG, "Failed to set gyroscope output data rate of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_xl_data_rate_set		(lsm6dsv_context, LSM6DSV_ODR_HA01_AT_1000Hz),	error, TAG, "Failed to set accelerometer output data rate of LSM6DSV.");
-
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_fifo_watermark_set		(lsm6dsv_context, 1),							error, TAG, "Failed to set FIFO watermark of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_fifo_gy_batch_set			(lsm6dsv_context, LSM6DSV_GY_BATCHED_AT_960Hz),	error, TAG, "Failed to set FIFO gyroscope batch rate of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_fifo_xl_batch_set			(lsm6dsv_context, LSM6DSV_XL_BATCHED_AT_960Hz),	error, TAG, "Failed to set FIFO accelerometer batch rate of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_fifo_sh_batch_slave_set	(lsm6dsv_context, 0, PROPERTY_ENABLE),			error, TAG, "Failed to enable sensor hub slave 0 FIFO batch of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_fifo_sh_batch_slave_set	(lsm6dsv_context, 1, PROPERTY_ENABLE),			error, TAG, "Failed to enable sensor hub slave 1 FIFO batch of LSM6DSV");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_fifo_mode_set				(lsm6dsv_context, LSM6DSV_STREAM_MODE),			error, TAG, "Failed to set FIFO mode of LSM6DSV.");
+	main_context->magneto_context	= magneto_context;
+	main_context->vqf_context		= vqf_context;
+	main_context->gyroscope			= gyroscope;
+	main_context->accelerometer		= accelerometer;
+	main_context->magnetometer		= magnetometer;
+	main_context->magneto			= magneto;
+	main_context->euler_angles		= euler_angles;
+	main_context->rotation_matrix	= rotation_matrix;
+	main_context->quaternion		= quaternion;
+	main_context->calibrating		= false;
 
 	slime_gpio_led_set_level(gpio_context, 1);
 
@@ -260,14 +374,14 @@ void app_main(void) {
 	slime_screen_commit(screen_context);
 
 	// Wait for the changes to be transmitted to the LCD panel.
-	delay_milliseconds(50U);
+	vTaskDelay(pdMS_TO_TICKS(50U));
 
 	// Turn on the display.
 	slime_screen_set_backlight(screen_context, 1U);
 
 	// Fade in the LOGO.
 	for (uint32_t percent = 0U; percent <= 100U; percent ++) {
-		uint32_t alpha = (255U * percent / 100U);
+		const uint32_t alpha = (255U * percent / 100U);
 
 		// Clear the background.
 		slime_screen_draw_rectangle(
@@ -296,40 +410,14 @@ void app_main(void) {
 		slime_screen_commit(screen_context);
 
 		// Delay.
-		delay_milliseconds(5U);
+		vTaskDelay(pdMS_TO_TICKS(5U));
 	}
 
 	// Show the logo for 2 seconds.
-	delay_milliseconds(2000U);
+	vTaskDelay(pdMS_TO_TICKS(2000U));
 
-	// Create the text styles of the UI.
-
-	// The green text style for normal display.
-	slime_screen_text_style_t text_style_green = {
-		.text_color_type	= RGBA8888,
-		.text_color			= 0x00FF00FFU,
-		.text_outline_color	= 0x007F00FFU,
-		.text_outlined		= true
-	};
-
-	// The red text style for important notices.
-	slime_screen_text_style_t text_style_red = {
-		.text_color_type	= RGBA8888,
-		.text_color			= 0xFF0000FFU,
-		.text_outline_color	= 0x7F0000FFU,
-		.text_outlined		= true
-	};
-
-	// The yellow text style for warnings.
-	slime_screen_text_style_t text_style_yellow = {
-		.text_color_type	= RGBA8888,
-		.text_color			= 0xFFFF00FFU,
-		.text_outline_color	= 0x7F7F00FFU,
-		.text_outlined		= true
-	};
-
-	while (1) {
-		if (loop_frame % 5U == 0U) {
+	while (true) {
+		if ((loop_frame ++) % 5U == 0U) {
 			slime_screen_draw_rectangle(
 				/* screen_context	= */ screen_context,
 				/* position_x		= */ 0,
@@ -339,7 +427,7 @@ void app_main(void) {
 				/* color_rgba8888	= */ 0x000000FFU
 			);
 
-			if (magneto_calibrating) {
+			if (main_context->calibrating) {
 				slime_screen_draw_string(
 					/* screen_context	= */ screen_context,
 					/* text_style		= */ &text_style_yellow,
@@ -354,26 +442,76 @@ void app_main(void) {
 					/* position_x		= */ 29,
 					/* position_y		= */ 28,
 					/* string			= */ "%03" PRIu32 "%%",
-					/* PRIu32			= */ ((magneto_sample_container->sample_norm_count * 100U) / 6000U)
-				);
-			} else if (!magneto_calibrated) {
-				slime_screen_draw_string(
-					/* screen_context	= */ screen_context,
-					/* text_style		= */ &text_style_red,
-					/* position_x		= */ 21,
-					/* position_y		= */ 18,
-					/* string			= */ "请校准"
+					/* PRIu32			= */ ((magneto_context->sample_container->sample_norm_count * 100U) / (45U * 50U))
 				);
 			} else {
+				// Update the 9D quaternion in main context.
+				vqf_get_quat_9D(
+					/* vqf_context	= */ main_context->vqf_context,
+					/* out			= */ main_context->quaternion
+				);
+
+				// Transform the 9D quaternion from ENU to NED.
+				ceigen_multiply_quaternion(
+					/* left_quaternion			= */ ned_to_enu,
+					/* right_quaternion			= */ main_context->quaternion,
+					/* destination_quaternion	= */ main_context->quaternion
+				);
+
+				ceigen_multiply_quaternion(
+					/* left_quaternion			= */ main_context->quaternion,
+					/* right_quaternion			= */ ned_to_enu,
+					/* destination_quaternion	= */ main_context->quaternion
+				);
+
+				// Convert the quaternion to rotation matrix.
+				ceigen_quaternion_to_rotation_matrix(
+					/* source_quaternion	= */ main_context->quaternion,
+					/* destination_matrix	= */ main_context->rotation_matrix
+				);
+
+				const float_t m00 = ceigen_get_matrix_coefficient(main_context->rotation_matrix, 0U, 0U);
+				const float_t m01 = ceigen_get_matrix_coefficient(main_context->rotation_matrix, 0U, 1U);
+
+				const float_t m10 = ceigen_get_matrix_coefficient(main_context->rotation_matrix, 1U, 0U);
+				const float_t m11 = ceigen_get_matrix_coefficient(main_context->rotation_matrix, 1U, 1U);
+
+				const float_t m20 = ceigen_get_matrix_coefficient(main_context->rotation_matrix, 2U, 0U);
+				const float_t m21 = ceigen_get_matrix_coefficient(main_context->rotation_matrix, 2U, 1U);
+				const float_t m22 = ceigen_get_matrix_coefficient(main_context->rotation_matrix, 2U, 2U);
+
+				const float_t sy = sqrt(
+					m00 * m00 +
+					m10 * m10
+				);
+
+				float_t yaw;
+				float_t pitch;
+				float_t roll;
+
+				if (sy > 1e-6f) {
+					yaw		= atan2(+m10, +m00);
+					pitch	= atan2(-m20, +sy);
+					roll	= atan2(+m21, +m22);
+				} else {
+					yaw		= atan2(-m01, +m11);
+					pitch	= atan2(-m20, +sy);
+					roll	= 0.0f;
+				}
+
+				yaw		*= 180.0f / M_PI;
+				pitch	*= 180.0f / M_PI;
+				roll	*= 180.0f / M_PI;
+
 				slime_screen_draw_string_fmt(
 					/* screen_context	= */ screen_context,
 					/* text_style		= */ &text_style_green,
 					/* position_x		= */ 5,
 					/* position_y		= */ 0,
-					/* string			= */ "X: %.2f\nY: %.2f\nZ: %.2f",
-					/* f				= */ north_output[0],
-					/* f				= */ north_output[1],
-					/* f				= */ north_output[2]
+					/* string			= */ "Y: %.2f\nP: %.2f\nR: %.2f",
+					/* f				= */ yaw,
+					/* f				= */ pitch,
+					/* f				= */ roll
 				);
 			}
 
@@ -381,291 +519,89 @@ void app_main(void) {
 		}
 
 		switch (slime_button_poll_event(button_context)) {
+			case BUTTON_SWITCH:
+				// Start the calibration if the button is pressed.
+				if (!main_context->calibrating) {
+					main_context->calibrating = true;
+
+					// Clear the samples in the sample container and reset the calibration coefficients.
+					slime_magneto_clear_samples					(magneto_context);
+					slime_magneto_reset_calibration_coefficients(magneto_context);
+				}
+				break;
 			case BUTTON_RETURN:
 				ESP_LOGI(TAG, "Return button pressed.");
 				break;
 			case BUTTON_CONFIRM:
 				ESP_LOGI(TAG, "Confirm button pressed.");
 				break;
-			case BUTTON_SWITCH:
-				// Start the calibration if the button is pressed.
-				if (!magneto_calibrating) {
-					magneto_calibrating	= true;
-					magneto_calibrated	= false;
-				}
-				break;
 			default:
 				break;
 		}
 
-		// Increase the frame.
-		loop_frame ++;
-
-		lsm6dsv_fifo_status_t	fifo_status				= {0};
-		lsm6dsv_fifo_out_raw_t	fifo_output				= {0};
-		uint16_t				fifo_count				= 0U;
-		uint8_t					fifo_magnetometer_ready	= 0U;
-
-		ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_fifo_status_get(lsm6dsv_context, &fifo_status), error, TAG, "Failed to get FIFO status of LSM6DSV.");
-
-		fifo_count = fifo_status.fifo_level;
-
-		while (fifo_count --) {
-			ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_fifo_out_raw_get(lsm6dsv_context, &fifo_output), error, TAG, "Failed to get FIFO raw output of LSM6DSV.");
-
-			const int16_t fifo_data_x = (int16_t) (((uint16_t) fifo_output.data[1] << 8) | fifo_output.data[0]);
-			const int16_t fifo_data_y = (int16_t) (((uint16_t) fifo_output.data[3] << 8) | fifo_output.data[2]);
-			const int16_t fifo_data_z = (int16_t) (((uint16_t) fifo_output.data[5] << 8) | fifo_output.data[4]);
-
-			switch (fifo_output.tag) {
-				case LSM6DSV_GY_NC_TAG:
-					// ESP_LOGI(TAG, "LSM6DSV gyroscope data output: %.2f, %.2f, %.2f",
-					// 		/* f */ lsm6dsv_from_fs4_to_mg(rawDataX),
-					// 		/* f */ lsm6dsv_from_fs4_to_mg(rawDataY),
-					// 		/* f */ lsm6dsv_from_fs4_to_mg(rawDataZ)
-					// );
-					break;
-				case LSM6DSV_XL_NC_TAG:
-					if (magneto_calibrated) {
-						float_t east_output		[3];
-						float_t accelerometer	[3] = {
-							lsm6dsv_from_fs4_to_mg(fifo_data_x),
-							lsm6dsv_from_fs4_to_mg(fifo_data_y),
-							lsm6dsv_from_fs4_to_mg(fifo_data_z)
-						};
-
-						float_t norm = sqrt(
-							accelerometer[0] * accelerometer[0] +
-							accelerometer[1] * accelerometer[1] +
-							accelerometer[2] * accelerometer[2]
-						);
-
-						accelerometer[0] /= norm;
-						accelerometer[1] /= norm;
-						accelerometer[2] /= norm;
-
-						cross(
-							/* a_in		= */ magneto_output,
-							/* b_in		= */ accelerometer,
-							/* c_out	= */ east_output
-						);
-
-						norm = sqrt(
-							east_output[0] * east_output[0] +
-							east_output[1] * east_output[1] +
-							east_output[2] * east_output[2]
-						);
-
-						east_output[0] /= norm;
-						east_output[1] /= norm;
-						east_output[2] /= norm;
-
-						cross(
-							/* a_in		= */ east_output,
-							/* b_in		= */ accelerometer,
-							/* c_out	= */ north_output
-						);
-
-						norm = sqrt(
-							north_output[0] * north_output[0] +
-							north_output[1] * north_output[1] +
-							north_output[2] * north_output[2]
-						);
-
-						north_output[0] /= norm;
-						north_output[1] /= norm;
-						north_output[2] /= norm;
-					}
-
-					break;
-				case LSM6DSV_SENSORHUB_SLAVE0_TAG:
-					const qmc6309_status_1_t* qmc6309Status = (qmc6309_status_1_t *) &fifo_output.data[0];
-
-					if (	qmc6309Status->drdy_bit != 0
-						&&	qmc6309Status->ovfl_bit == 0
-					) {
-						fifo_magnetometer_ready = 1U;
-					}
-					break;
-				case LSM6DSV_SENSORHUB_SLAVE1_TAG:
-					if (fifo_magnetometer_ready) {
-						fifo_magnetometer_ready = 0U;
-
-						const float_t qmc6309RawGaussX = qmc6309_ll_from_rng8_to_gauss(fifo_data_x);
-						const float_t qmc6309RawGaussY = qmc6309_ll_from_rng8_to_gauss(fifo_data_y);
-						const float_t qmc6309RawGaussZ = qmc6309_ll_from_rng8_to_gauss(fifo_data_z);
-
-						if (magneto_calibrating) {
-							if (magneto_sample_container->sample_norm_count < 60 * 100) {
-								ESP_LOGI(TAG, "QMCC6309 magnetometer calibration raw data output: %.2f, %.2f, %.2f",
-									/* f */ qmc6309RawGaussX,
-									/* f */ qmc6309RawGaussY,
-									/* f */ qmc6309RawGaussZ
-								);
-
-								// Add the raw magnetometer output gauss as the sample of the calibration.
-								magneto_sample(
-									/* context			= */ &slime_magneto_linear_algebra_context,
-									/* sample_container	= */ magneto_sample_container,
-									/* sample_x			= */ qmc6309RawGaussX,
-									/* sample_y			= */ qmc6309RawGaussY,
-									/* sample_z			= */ qmc6309RawGaussZ
-								);
-							} else {
-								ESP_LOGI(TAG, "QMC6309 Calibrating.");
-
-								// Calibrate.
-								magneto_calculate(
-									/* context			= */ &slime_magneto_linear_algebra_context,
-									/* sample_container	= */ magneto_sample_container,
-									/* soft_iron_matrix	= */ magneto_soft_iron_matrix,
-									/* hard_iron_vector	= */ magneto_hard_iron_vector
-								);
-
-								// Print the calibrated soft iron matrix to the serial.
-								ESP_LOGI(TAG, "QMC6309 Calibrated.");
-								ESP_LOGI(TAG, "QMC6309 Calibrated soft iron matrix: ");
-								ESP_LOGI(TAG, "[");
-
-								// Print rows of the soft iron matrix.
-								for (uint32_t row = 0; row < 3; row ++) {
-									ESP_LOGI(TAG, "    %.2f, %.2f, %.2f",
-										slime_magneto_get_matrix_coefficient(magneto_soft_iron_matrix, row, 0),
-										slime_magneto_get_matrix_coefficient(magneto_soft_iron_matrix, row, 1),
-										slime_magneto_get_matrix_coefficient(magneto_soft_iron_matrix, row, 2)
-									);
-								}
-
-								ESP_LOGI(TAG, "]");
-
-								// Print the calibrated hard iron vector to the serial.
-								ESP_LOGI(TAG, "QMC 6309 Calibrated hard iron vector: ");
-								ESP_LOGI(TAG, "[");
-								ESP_LOGI(TAG, "   %.2f,", slime_magneto_get_matrix_coefficient(magneto_hard_iron_vector, 0, 0));
-								ESP_LOGI(TAG, "   %.2f,", slime_magneto_get_matrix_coefficient(magneto_hard_iron_vector, 1, 0));
-								ESP_LOGI(TAG, "   %.2f,", slime_magneto_get_matrix_coefficient(magneto_hard_iron_vector, 2, 0));
-								ESP_LOGI(TAG, "]");
-
-								// Mark as calibrated.
-								magneto_calibrated	= true;
-								magneto_calibrating	= false;
-
-								// Extract the coefficients from the soft iron matrix to the blob.
-								for		(uint32_t row = 0; row < 3; row ++) {
-									for	(uint32_t col = 0; col < 3; col ++) {
-										slime_magneto_blob.magneto_soft_iron_matrix[row * 3 + col] = slime_magneto_get_matrix_coefficient(magneto_soft_iron_matrix, row, col);
-									}
-								}
-
-								// Extract the coefficients from the hard iron vector to the blob.
-								slime_magneto_blob.magneto_hard_iron_vector[0] = slime_magneto_get_matrix_coefficient(magneto_hard_iron_vector, 0, 0); // Extract the X-axis calibration bias.
-								slime_magneto_blob.magneto_hard_iron_vector[1] = slime_magneto_get_matrix_coefficient(magneto_hard_iron_vector, 1, 0); // Extract the Y-axis calibration bias.
-								slime_magneto_blob.magneto_hard_iron_vector[2] = slime_magneto_get_matrix_coefficient(magneto_hard_iron_vector, 2, 0); // Extract the Z-axis calibration bias.
-
-								// Mark as calibrated in the blob.
-								slime_magneto_blob.magneto_calibrated = true;
-
-								// Save the extracted data to the NVS.
-								ESP_GOTO_ON_ERROR(slime_nvs_save_blob(
-									/* nvs_context	= */ nvs_context,
-									/* nvs_blob_key	= */ &slime_magneto_blob_key,
-									/* nvs_blob_in	= */ &slime_magneto_blob
-								), error, TAG, "Failed to save calibration data blob to NVS context.");
-							}
-						} else {
-							// Load the raw magnetometer data into the magneto calibration input vector.
-							slime_magneto_set_matrix_coefficient(magneto_input_vector, 0, 0, qmc6309RawGaussX); // Load the X axis uncalibrated data into the input vector.
-							slime_magneto_set_matrix_coefficient(magneto_input_vector, 1, 0, qmc6309RawGaussY); // Load the Y axis uncalibrated data into the input vector.
-							slime_magneto_set_matrix_coefficient(magneto_input_vector, 2, 0, qmc6309RawGaussZ); // Load the Z axis uncalibrated data into the input vector.
-
-							// Unbias the input and write it to the unbiased output vector.
-							slime_magneto_subtract_matrix(
-								/* left_matrix			= */ magneto_input_vector,
-								/* right_matrix			= */ magneto_hard_iron_vector,
-								/* destination_matrix	= */ magneto_output_vector_unbiased
-							);
-
-							// Calibrate the unbiased magnetometer output with the soft iron matrix.
-							slime_magneto_multiply_matrix(
-								/* left_matrix			= */ magneto_soft_iron_matrix,
-								/* right_matrix			= */ magneto_output_vector_unbiased,
-								/* destination_matrix	= */ magneto_output_vector
-							);
-
-							// Normalize the calibration output.
-							slime_magneto_normalize_matrix_in_place(magneto_output_vector);
-
-							// Store the current calibrated magnetometer output.
-							magneto_output[0] = slime_magneto_get_matrix_coefficient(magneto_output_vector, 0, 0);	// The X axis of the calibrated magnetometer output.
-							magneto_output[1] = slime_magneto_get_matrix_coefficient(magneto_output_vector, 1, 0);	// The Y axis of the calibrated magnetometer output.
-							magneto_output[2] = slime_magneto_get_matrix_coefficient(magneto_output_vector, 2, 0);	// The Z axis of the calibrated magnetometer output.
-						}
-					}
-					break;
-				default:
-					ESP_LOGE(TAG, "Invalid FIFO tag: 0x%02." PRIX8, fifo_output.tag);
-					break;
-			}
-		}
+		ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(slime_sensor_poll_fifo(sensor_context)), error, TAG, "Failed to poll FIFO data of the sensor context.");
 	}
 
-	error: {
-		ESP_LOGE(TAG, "Error occurred: 0x%" PRIX8 ": %s", ret, esp_err_to_name(ret));
-		ESP_LOGE(TAG, "Cleaning up resources.");
+	error:
 
-		if (screen_context) {
-			slime_screen_draw_rectangle(
-				/* screen_context	= */ screen_context,
-				/* position_x		= */ 0,
-				/* position_y		= */ 0,
-				/* size_x			= */ 96,
-				/* size_y			= */ 54,
-				/* color_rgba8888	= */ 0x000000FFU
+	ESP_LOGE(TAG, "Error occurred: 0x%" PRIX8 ": %s", ret, esp_err_to_name(ret));
+	ESP_LOGE(TAG, "Cleaning up resources.");
+
+	if (screen_context) {
+		slime_screen_draw_rectangle(
+			/* screen_context	= */ screen_context,
+			/* position_x		= */ 0,
+			/* position_y		= */ 0,
+			/* size_x			= */ 96,
+			/* size_y			= */ 54,
+			/* color_rgba8888	= */ 0x000000FFU
+		);
+
+		if (err.error_type == IMU_ERROR) {
+			slime_screen_draw_string(
+				/* screen_context			= */ screen_context,
+				/* text_style				= */ &text_style_red,
+				/* position_x				= */ 15,
+				/* position_y				= */ 18,
+				/* string					= */ "IMU错误"
 			);
-
-			if (lsm6dsv_chip_id != LSM6DSV_ID) {
-				slime_screen_draw_string(
-					/* screen_context			= */ screen_context,
-					/* text_style				= */ &text_style_red,
-					/* position_x				= */ 15,
-					/* position_y				= */ 18,
-					/* string					= */ "IMU错误"
-				);
-			} else if (lsm6dsv_chip_id != QMC6309_CHIP_ID_REF) {
-				slime_screen_draw_string(
-					/* screen_context			= */ screen_context,
-					/* text_style				= */ &text_style_red,
-					/* position_x				= */ 3,
-					/* position_y				= */ 18,
-					/* string					= */ "磁力计错误"
-				);
-			} else {
-				slime_screen_draw_string(
-					/* screen_context			= */ screen_context,
-					/* text_style				= */ &text_style_yellow,
-					/* position_x				= */ 12,
-					/* position_y				= */ 18,
-					/* string					= */ "程序错误"
-				);
-			}
-
-			slime_screen_commit(screen_context);
+		} else if (err.error_type == MAG_ERROR) {
+			slime_screen_draw_string(
+				/* screen_context			= */ screen_context,
+				/* text_style				= */ &text_style_red,
+				/* position_x				= */ 3,
+				/* position_y				= */ 18,
+				/* string					= */ "磁力计错误"
+			);
+		} else {
+			slime_screen_draw_string(
+				/* screen_context			= */ screen_context,
+				/* text_style				= */ &text_style_yellow,
+				/* position_x				= */ 12,
+				/* position_y				= */ 18,
+				/* string					= */ "程序错误"
+			);
 		}
 
-		while (1) {
-			if (lsm6dsv_chip_id != LSM6DSV_ID) {
-				slime_gpio_led_set_level(gpio_context, 0);
-			} else if (lsm6dsv_chip_id != QMC6309_CHIP_ID_REF) {
-				slime_gpio_led_set_level(gpio_context, 0);
-				delay_milliseconds(250U);
-				slime_gpio_led_set_level(gpio_context, 1);
-				delay_milliseconds(250U);
-			} else {
-				slime_gpio_led_set_level(gpio_context, 0);
-				delay_milliseconds(1000U);
-				slime_gpio_led_set_level(gpio_context, 1);
-				delay_milliseconds(1000U);
-			}
+		slime_screen_commit(screen_context);
+	}
+
+	while (1) {
+		if (err.error_type == IMU_ERROR) {
+			slime_gpio_led_set_level(gpio_context, 0);
+			vTaskDelay(pdMS_TO_TICKS(50U));
+			slime_gpio_led_set_level(gpio_context, 1);
+			vTaskDelay(pdMS_TO_TICKS(50U));
+		} else if (err.error_type == MAG_ERROR) {
+			slime_gpio_led_set_level(gpio_context, 0);
+			vTaskDelay(pdMS_TO_TICKS(200U));
+			slime_gpio_led_set_level(gpio_context, 1);
+			vTaskDelay(pdMS_TO_TICKS(200U));
+		} else {
+			slime_gpio_led_set_level(gpio_context, 0);
+			vTaskDelay(pdMS_TO_TICKS(1000U));
+			slime_gpio_led_set_level(gpio_context, 1);
+			vTaskDelay(pdMS_TO_TICKS(1000U));
 		}
 	}
 }

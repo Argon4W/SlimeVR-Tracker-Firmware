@@ -2,49 +2,8 @@
 #include "lsm6dsv_reg.h"
 #include "qmc6309_reg.h"
 #include "esp_lcd_st7735.h"
-
-const slime_nvs_context_config_t nvs_context_config = {
-	.nvs_partition = CONFIG_SLIME_NVS_PARTITION,	/*!< Configurable NVS partition name. */
-	.nvs_namespace = CONFIG_SLIME_NVS_NAMESPACE,	/*!< Configurable NVS namespace. */
-	.nvs_skip_init = false							/*!< We need NVS context to take over the initialization of the NVS flash initialization. */
-};
-
-const slime_gpio_context_config_t gpio_context_config = {
-	.gpio_led_config = {
-		.pin_bit_mask	= 1ULL << CONFIG_SLIME_GPIO_LED,	/*!< The configurable GPIO Num of the LED on the sensor board. */
-		.mode			= GPIO_MODE_OUTPUT,					/*!< Set to output mode. */
-		.pull_up_en		= GPIO_PULLUP_DISABLE,				/*!< Disable internal pull-up. */
-		.pull_down_en	= GPIO_PULLDOWN_DISABLE,			/*!< Disable internal pull-down. */
-		.intr_type		= GPIO_INTR_DISABLE					/*!< Disable interrupt. */
-	},
-	.gpio_backlight_config = {
-		.pin_bit_mask	= 1ULL << CONFIG_SLIME_GPIO_BACKLIGHT,	/*!< The configurable GPIO Num of the Backlight of the LCD panel. */
-		.mode			= GPIO_MODE_OUTPUT,						/*!< Set to output mode. */
-		.pull_up_en		= GPIO_PULLUP_DISABLE,					/*!< Disable internal pull-up. */
-		.pull_down_en	= GPIO_PULLDOWN_DISABLE,				/*!< Disable internal pull-down. */
-		.intr_type		= GPIO_INTR_DISABLE						/*!< Disable interrupt. */
-	}
-};
-
-const slime_i2c_context_config_t i2c_context_config = {
-	.i2c_master_bus_config = {
-		.clk_source			= I2C_CLK_SRC_DEFAULT,			/*!<  Use default I2C clock source. */
-		.i2c_port			= I2C_NUM_0,					/*!<  Use I2C0. */
-		.scl_io_num			= CONFIG_SLIME_I2C_MASTER_SCL,	/*!< Configurable SCL GPIO Num. */
-		.sda_io_num			= CONFIG_SLIME_I2C_MASTER_SDA,	/*!< Configurable SDA GPIO Num. */
-		.glitch_ignore_cnt	= 7								/*!< Typical value of glitch period ignore count.*/
-	},
-	.i2c_imu_device_config = {
-		.dev_addr_length	= I2C_ADDR_BIT_LEN_7,					/*!< Use 7-bit address length. */
-		.device_address		= LSM6DSV_I2C_ADD_L >> 1,				/*!< Convert the 8-bit address into 7-bit. */
-		.scl_speed_hz		= CONFIG_SLIME_I2C_MASTER_FREQUENCY,	/*!< Configurable I2C master device frequency. */
-	},
-	.i2c_mag_device_config = {
-		.dev_addr_length	= I2C_ADDR_BIT_LEN_7,					/*!< Use 7-bit address length. */
-		.device_address		= QMC6309_I2C_ADDRESS,					/*!< The address in QMC6309 driver is already 7-bit. */
-		.scl_speed_hz		= CONFIG_SLIME_I2C_MASTER_FREQUENCY,	/*!< Configurable I2C master device frequency. */
-	}
-};
+#include "slime_sensor_empty.h"
+#include "slime_sensor_lsm6dsv_qmc6309.h"
 
 /**
  * @brief The internal ST7735P3 96x54 vendor-specific initialization command sequence of the LCD context .
@@ -79,8 +38,112 @@ static st7735_vendor_config_t st7735p3_96x54_vendor_config = {
 	.init_cmds_size	= 19U							/*!< The count of commands of the initialization command sequence. */
 };
 
+/**
+ * @brief The internal default value of the serialized calibration coefficients.
+ */
+static const slime_magneto_calibration_coefficients_t slime_magneto_calibration_coefficients_default = {
+	.soft_iron_matrix = {	/*!< The identity soft iron matrix. */
+		1.0f, 0.0f, 0.0f,	/*!< The first row of the soft iron matrix. */
+		0.0f, 1.0f, 0.0f,	/*!< The second row of the soft iron matrix. */
+		0.0f, 0.0f, 1.0f	/*!< The third row of the soft iron matrix. */
+	},
+	.hard_iron_vector = { /*!< The zero hard iron vector. */
+		0.0f,	/*!< The X dimension component of the hard iron vector. */
+		0.0f,	/*!< The Y dimension component of the hard iron vector. */
+		0.0f	/*!< The Z dimension component of the hard iron vector. */
+	},
+	.reference_length	= 0.0f,	/*!< Invalid reference value. */
+	.valid				= false	/*!< Not valid calibration data. */
+};
+
+/**
+ * @brief The internal configuration of the LSM6DSV+QMC6309 sensor context.
+ */
+static const slime_lsm6dsv_qmc6309_sensor_context_config_t slime_lsm6dsv_qmc6309_sensor_context_config = {
+	.lsm6dsv_device_address					= LSM6DSV_I2C_ADD_L >> 1U,		/*!< The I2C address of the LSM6DSV in 7-bit format. */
+	.qmc6309_device_address					= QMC6309_I2C_ADDRESS,			/*!< The I2C address of the QMC6309. */
+	.lsm6dsv_gyroscope_full_scale			= LSM6DSV_1000dps,				/*!< Set gyroscope full scale range to 1000dps. */
+	.lsm6dsv_accelerometer_full_scale		= LSM6DSV_4g,					/*!< Set accelerometer full scale range to 4g. */
+	.lsm6dsv_sensor_hub_data_rate			= LSM6DSV_SH_60Hz,				/*!< Set sensor hub data rate to 240Hz that matches the 200Hz ODR of QMC6309. */
+	.lsm6dsv_gyroscope_data_rate			= LSM6DSV_ODR_AT_240Hz,			/*!< Set the output data rate of gyroscope to 960Hz. */
+	.lsm6dsv_accelerometer_data_rate		= LSM6DSV_ODR_AT_120Hz,			/*!< Set the output data rate of accelerometer to 960Hz. */
+	.lsm6dsv_fifo_gyroscope_batch_rate		= LSM6DSV_GY_BATCHED_AT_240Hz,	/*!< Set the FIFO batch rate of gyroscope to the same rate as the gyroscope ODR. */
+	.lsm6dsv_fifo_accelerometer_batch_rate	= LSM6DSV_XL_BATCHED_AT_120Hz,	/*!< Set the FIFO batch rate of accelerometer to the same rate as the accelerometer ODR. */
+	.qmc6309_setup = {					/*!< The QMC6309 setup parameters. */
+		.mode			= NORMAL,		/*!< Set to normal mode. */
+		.set_reset_mode	= SET_RESET_ON,	/*!< MUST set the set/reset mode to ON. */
+		.rng			= RNG_8G,		/*!< Set the full scale range to 8G. */
+		.odr			= ODR_50HZ,		/*!< Set the output data rate to maximum 200Hz. */
+		.osr1			= OSR1_8,		/*!< Set over sample rate to 8. */
+		.osr2			= OSR2_8		/*!< Set low pass filter depth to 8. */
+	}
+};
+
+const slime_nvs_context_config_t nvs_context_config = {
+	.partition = CONFIG_SLIME_NVS_PARTITION, /*!< Configurable NVS partition name. */
+	.namespace = CONFIG_SLIME_NVS_NAMESPACE, /*!< Configurable NVS namespace. */
+};
+
+const slime_gpio_context_config_t gpio_context_config = {
+	.led_gpio_config = {									/*!< The configuration of the LED GPIO. */
+		.pin_bit_mask	= 1ULL << CONFIG_SLIME_GPIO_LED,	/*!< The configurable GPIO Num of the LED on the sensor board. */
+		.mode			= GPIO_MODE_OUTPUT,					/*!< Set to output mode. */
+		.pull_up_en		= GPIO_PULLUP_DISABLE,				/*!< Disable internal pull-up. */
+		.pull_down_en	= GPIO_PULLDOWN_DISABLE,			/*!< Disable internal pull-down. */
+		.intr_type		= GPIO_INTR_DISABLE					/*!< Disable interrupt. */
+	},
+	.backlight_gpio_config = {									/*!< The configuration of the Backlight GPIO. */
+		.pin_bit_mask	= 1ULL << CONFIG_SLIME_GPIO_BACKLIGHT,	/*!< The configurable GPIO Num of the Backlight of the LCD panel. */
+		.mode			= GPIO_MODE_OUTPUT,						/*!< Set to output mode. */
+		.pull_up_en		= GPIO_PULLUP_DISABLE,					/*!< Disable internal pull-up. */
+		.pull_down_en	= GPIO_PULLDOWN_DISABLE,				/*!< Disable internal pull-down. */
+		.intr_type		= GPIO_INTR_DISABLE						/*!< Disable interrupt. */
+	},
+	.sensor_id_0_gpio_config = {											/*!< The configuration of the sensor board ID bit 0 GPIO. */
+		.pin_bit_mask	= 1ULL << CONFIG_SLIME_GPIO_SENSOR_BOARD_ID_BIT_0,	/*!< The configurable GPIO Num of the Backlight of the LCD panel. */
+		.mode			= GPIO_MODE_INPUT,									/*!< Set to output mode. */
+		.pull_up_en		= GPIO_PULLUP_DISABLE,								/*!< Disable internal pull-up. */
+		.pull_down_en	= GPIO_PULLDOWN_DISABLE,							/*!< Disable internal pull-down. */
+		.intr_type		= GPIO_INTR_DISABLE									/*!< Disable interrupt. */
+	},
+	.sensor_id_1_gpio_config = {											/*!< The configuration of the sensor board ID bit 1 GPIO. */
+		.pin_bit_mask	= 1ULL << CONFIG_SLIME_GPIO_SENSOR_BOARD_ID_BIT_1,	/*!< The configurable GPIO Num of the Backlight of the LCD panel. */
+		.mode			= GPIO_MODE_INPUT,									/*!< Set to output mode. */
+		.pull_up_en		= GPIO_PULLUP_DISABLE,								/*!< Disable internal pull-up. */
+		.pull_down_en	= GPIO_PULLDOWN_DISABLE,							/*!< Disable internal pull-down. */
+		.intr_type		= GPIO_INTR_DISABLE									/*!< Disable interrupt. */
+	},
+	.sensor_id_2_gpio_config = {											/*!< The configuration of the sensor board ID bit 2 GPIO. */
+		.pin_bit_mask	= 1ULL << CONFIG_SLIME_GPIO_SENSOR_BOARD_ID_BIT_2,	/*!< The configurable GPIO Num of the Backlight of the LCD panel. */
+		.mode			= GPIO_MODE_INPUT,									/*!< Set to output mode. */
+		.pull_up_en		= GPIO_PULLUP_DISABLE,								/*!< Disable internal pull-up. */
+		.pull_down_en	= GPIO_PULLDOWN_DISABLE,							/*!< Disable internal pull-down. */
+		.intr_type		= GPIO_INTR_DISABLE									/*!< Disable interrupt. */
+	}
+};
+
+const slime_i2c_context_config_t i2c_context_config = {
+	.i2c_master_bus_config = {								/*!< The configuration of the I2C master bus. */
+		.clk_source			= I2C_CLK_SRC_DEFAULT,			/*!<  Use default I2C clock source. */
+		.i2c_port			= I2C_NUM_0,					/*!<  Use I2C0. */
+		.scl_io_num			= CONFIG_SLIME_I2C_MASTER_SCL,	/*!< Configurable SCL GPIO Num. */
+		.sda_io_num			= CONFIG_SLIME_I2C_MASTER_SDA,	/*!< Configurable SDA GPIO Num. */
+		.glitch_ignore_cnt	= 7								/*!< Typical value of glitch period ignore count.*/
+	},
+	.imu_device_config = {											/*!< The configuration of IMU I2C device. */
+		.dev_addr_length	= I2C_ADDR_BIT_LEN_7,					/*!< Use 7-bit address length. */
+		.device_address		= 0x00U,								/*!< The default address 0x00U of the IMU I2C device. */
+		.scl_speed_hz		= CONFIG_SLIME_I2C_MASTER_FREQUENCY,	/*!< Configurable I2C master device frequency. */
+	},
+	.mag_device_config = {											/*!< The configuration of magnetometer I2C device. */
+		.dev_addr_length	= I2C_ADDR_BIT_LEN_7,					/*!< Use 7-bit address length. */
+		.device_address		= 0x00U,								/*!< The default address 0x00U of the magnetometer I2C device. */
+		.scl_speed_hz		= CONFIG_SLIME_I2C_MASTER_FREQUENCY,	/*!< Configurable I2C master device frequency. */
+	}
+};
+
 const slime_lcd_context_config_t lcd_context_config = {
-	.lcd_spi_bus_config = {
+	.spi_bus_config = {																	/*!< The configuration of the SPI Bus. */
 		.mosi_io_num		= CONFIG_SLIME_SPI_BUS_MOSI,								/*!< Configurable MOSI GPIO Num. */
 		.sclk_io_num		= CONFIG_SLIME_SPI_BUS_SCLK,								/*!< Configurable SCLK GPIO Num. */
 		.miso_io_num		= GPIO_NUM_NC,												/*!< ST7735 doesn't need master input. */
@@ -89,7 +152,7 @@ const slime_lcd_context_config_t lcd_context_config = {
 		.max_transfer_sz	= CONFIG_SLIME_SPI_BUS_MAX_TRANSFER_SZ,						/*!< Configurable maximum transfer size in bytes. */
 		.flags				= SPICOMMON_BUSFLAG_MASTER | SPICOMMON_BUSFLAG_IOMUX_PINS,	/*!< Make sure the SPI Bus in master mode and uses IO mux rather than GPIO matrix. */
 	},
-	.lcd_panel_io_spi_config = {
+	.panel_io_spi_config = {									/*!< The configuration of the ESP LCD panel SPI IO handle. */
 		.cs_gpio_num		= GPIO_NUM_NC,						/*!< We don't need CS because we have only one device attached to the bus. */
 		.dc_gpio_num		= CONFIG_SLIME_LCD_DC,				/*!< Configurable DC GPIO Num. */
 		.pclk_hz			= CONFIG_SLIME_SPI_BUS_FREQUENCY,	/*!< Configurable SPI Bus frequency. */
@@ -98,24 +161,24 @@ const slime_lcd_context_config_t lcd_context_config = {
 		.lcd_cmd_bits		= 8,								/*!< Copied from test app of ST7735 ESP LCD Driver. */
 		.lcd_param_bits		= 8,								/*!< Copied from test app of ST7735 ESP LCD Driver. */
 	},
-	.lcd_panel_device_config = {
+	.panel_device_config = {								/*!< The configuration of the ESP LCD panel handle. */
 		.reset_gpio_num	= CONFIG_SLIME_LCD_RES,				/*!< Configurable reset GPIO num. */
 		.color_space	= ESP_LCD_COLOR_SPACE_RGB,			/*!< Copied from test app of ST7735 ESP LCD Driver. */
 		.bits_per_pixel = 16,								/*!< Copied from test app of ST7735 ESP LCD Driver. */
 		.vendor_config	= &st7735p3_96x54_vendor_config,	/*!< The vendor configuration of ST7735P3 96x54. */
 	},
-	.lcd_gap_offset_x = 16U,	/*!< The vendor specific gap offset X in pixels of the ST7735P3 96x54. */
-	.lcd_gap_offset_y = 106U	/*!< The vendor specific gap offset Y in pixels of the ST7735P3 96x54. */
+	.gap_offset_x = 16U,	/*!< The vendor specific gap offset X in pixels of the ST7735P3 96x54. */
+	.gap_offset_y = 106U	/*!< The vendor specific gap offset Y in pixels of the ST7735P3 96x54. */
 };
 
 const slime_screen_context_config_t screen_context_config = {
-	.screen_transmit_task_config = {
-		.transmit_task_framerate	= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_FRAMERATE,		/*!< Configurable framerate of the transmission task. */
-		.transmit_task_core_id		= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_CORE_ID,		/*!< Configurable core ID of the transmission task. */
-		.transmit_task_stack_depth	= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_STACK_DEPTH,	/*!< Configurable stack depth of the transmission task. */
-		.transmit_task_priority		= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_PRIORITY		/*!< Configurable priority of the transmission task. */
+	.transmit_task_config = {													/*!< The configuration of the transmission task. */
+		.transmit_framerate	= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_FRAMERATE,		/*!< Configurable framerate of the transmission task. */
+		.task_core_id		= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_CORE_ID,		/*!< Configurable core ID of the transmission task. */
+		.task_stack_depth	= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_STACK_DEPTH,	/*!< Configurable stack depth of the transmission task. */
+		.task_priority		= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_PRIORITY		/*!< Configurable priority of the transmission task. */
 	},
-	.screen_fast_lcd_panel_config = {
+	.fast_lcd_panel_config = {							/*!< The configuration of the fast LCD panel */
 		.frame_size_x			= 96U,					/*!< Set the width of the screen to the width of the LCD panel in pixels. */
 		.frame_size_y			= 54U,					/*!< Set the height of the screen to the height of the LCD panel in pixels. */
 		.frame_tile_size_x		= 16U,					/*!< Slice the X axis of the screen into 6 tiles, */
@@ -124,7 +187,7 @@ const slime_screen_context_config_t screen_context_config = {
 		.buffer_flags			= MALLOC_CAP_INTERNAL,	/*!< Allocate the framebuffer and ring buffer slots in the internal SRAM */
 		.name					= "slime_screen"		/*!< The name of the screen used in debugging. */
 	},
-	.screen_fast_text_engine_instance_config = {
+	.fast_text_engine_instance_config = {						/*!< The configuration of the text engine instance. */
 		.crlf_mode				= false,						/*!< We don't use CRLF. */
 		.font_size_scale		= 1U,							/*!< We usually use scale 1 text. */
 		.font_outline_radius	= 1U,							/*!< 1px outline radius is enough for scale 1. */
@@ -134,7 +197,7 @@ const slime_screen_context_config_t screen_context_config = {
 		.atlas_flags			= 0U,							/*!< No extra flags needed. */
 		.name					= "slime_screen_text_engine"	/*!< The name of the text engine. */
 	},
-	.screen_fast_text_engine_font = {
+	.fast_text_engine_font = {							/*!< The font of the font engine instance. */
 		.size_x_max		= 16U,							/*!< The height of the glyphs of Unifont is 16 in pixels. */
 		.size_y			= 16U,							/*!< The maximum width of the glyphs of Unifont is 16 in pixels. */
 		.glyph_data		= unifont_17_0_05_1bpp_bits,	/*!< The tightly packed 1bpp LSBit-first font glyph data of the modified version of the Unifont 17.0.05. */
@@ -143,12 +206,12 @@ const slime_screen_context_config_t screen_context_config = {
 };
 
 const slime_button_context_config_t button_context_config = {
-	.button_return_config = {
-		.button_config = {
+	.return_button_config = {										/*!< The configuration of the return button */
+		.button_config = {											/*!< The IOT button configuration of the return button */
 			.long_press_time	= 0,								/*!< We don't need long press for now. */
 			.short_press_time	= CONFIG_SLIME_BUTTON_CLICK_TIME	/*!< Configurable short press time in milliseconds. */
 		},
-		.button_gpio_config = {
+		.button_gpio_config = {										/*!< The GPIO configuration of the return button */
 			.gpio_num			= CONFIG_SLIME_BUTTON_RETURN,		/*!< Configurable GPIO Num of the return button. */
 			.active_level		= CONFIG_SLIME_BUTTON_ACTIVE_LEVEL,	/*!< Configurable GPIO level when the button is pressed down. */
 			.enable_power_save	= false,							/*!< We don't need power saving. */
@@ -157,12 +220,12 @@ const slime_button_context_config_t button_context_config = {
 			#endif // SLIME_BUTTON_DISABLE_INTERNAL_PULL
 		}
 	},
-	.button_switch_config = {
-		.button_config = {
+	.switch_button_config = {										/*!< The configuration of the switch button */
+		.button_config = {											/*!< The IOT button configuration of the switch button */
 			.long_press_time	= 0,								/*!< We don't need long press for now. */
 			.short_press_time	= CONFIG_SLIME_BUTTON_CLICK_TIME	/*!< Configurable short press time in milliseconds. */
 		},
-		.button_gpio_config = {
+		.button_gpio_config = {										/*!< The GPIO configuration of the switch button */
 			.gpio_num			= CONFIG_SLIME_BUTTON_SWITCH,		/*!< Configurable GPIO Num of the switch button. */
 			.active_level		= CONFIG_SLIME_BUTTON_ACTIVE_LEVEL,	/*!< Configurable GPIO level when the button is pressed down. */
 			.enable_power_save	= false,							/*!< We don't need power saving. */
@@ -171,12 +234,12 @@ const slime_button_context_config_t button_context_config = {
 			#endif // SLIME_BUTTON_DISABLE_INTERNAL_PULL
 		}
 	},
-	.button_confirm_config = {
-		.button_config = {
+	.confirm_button_config = {										/*!< The configuration of the confirm button */
+		.button_config = {											/*!< The IOT button configuration of the confirm button */
 			.long_press_time	= 0,								/*!< We don't need long press for now. */
 			.short_press_time	= CONFIG_SLIME_BUTTON_CLICK_TIME	/*!< Configurable short press time in milliseconds. */
 		},
-		.button_gpio_config = {
+		.button_gpio_config = {										/*!< The GPIO configuration of the confirm button */
 			.gpio_num			= CONFIG_SLIME_BUTTON_CONFIRM,		/*!< Configurable GPIO Num of the confirm button. */
 			.active_level		= CONFIG_SLIME_BUTTON_ACTIVE_LEVEL,	/*!< Configurable GPIO level when the button is pressed down. */
 			.enable_power_save	= false,							/*!< We don't need power saving. */
@@ -186,4 +249,55 @@ const slime_button_context_config_t button_context_config = {
 		}
 	},
 	.button_event_queue_size = CONFIG_SLIME_BUTTON_EVENT_QUEUE_SIZE /*!< Configurable button event queue size. */
+};
+
+const slime_magneto_context_config_t slime_magneto_context_config = {
+	.calibration_coefficients_key = {								/*!< The key of the coefficients of the magneto context. */
+		.name = "mag_coeff",										/*!< The name of the key. */
+		.init = &	slime_magneto_calibration_coefficients_default,	/*!< The default value of the serialized coefficients. */
+		.size =		slime_magneto_calibration_coefficients_size		/*!< The size of the serialized coefficient struct */
+	}
+};
+
+const slime_sensor_type_t slime_sensor_type_table[8] = {
+	{																/*!< The sensor type of sensor board ID 000 (Currently empty). */
+		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
+		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	},
+	{																			/*!< The sensor type of sensor board ID 001 (LSM6DSV+QMC6309). */
+		.sensor_context_new		= slime_lsm6dsv_qmc6309_sensor_context_new,		/*!< The sensor context creation function pointer of the LSM6DSV+QMC6309 sensor context. */
+		.sensor_context_config	= &slime_lsm6dsv_qmc6309_sensor_context_config,	/*!< Configuration of the LSM6DSV+QMC6309 sensor context. */
+		.sensor_context_name	= "lsm6dsv_qmc6309_sensor"						/*!< The name of the LSM6DSV+QMC6309 sensor. */
+	},
+	{																/*!< The sensor type of sensor board ID 010 (Currently empty). */
+		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
+		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	},
+	{																/*!< The sensor type of sensor board ID 011 (Currently empty). */
+		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
+		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	},
+	{																/*!< The sensor type of sensor board ID 100 (Currently empty). */
+		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
+		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	},
+	{																/*!< The sensor type of sensor board ID 101 (Currently empty). */
+		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
+		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	},
+	{																/*!< The sensor type of sensor board ID 110 (Currently empty). */
+		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
+		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	},
+	{																/*!< The sensor type of sensor board ID 111 (Currently empty). */
+		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
+		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	}
 };

@@ -8,11 +8,6 @@
  */
 static const char* TAG = "slime_nvs";
 
-/**
- * @brief The global initialization state of the NVS flash.
- */
-static uint8_t nvs_flash_initialized = false;
-
 esp_err_t slime_nvs_load_blob(
 	const	slime_nvs_context_t*	nvs_context,
 	const	slime_nvs_blob_key_t*	nvs_blob_key,
@@ -25,19 +20,20 @@ esp_err_t slime_nvs_load_blob(
 
 	// Log the operation if NVS debug logging is enabled.
 	#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Loading blob \"%s\" of %zu byte(s) from NVS context.",
-			/* s	*/ nvs_blob_key->blob_name,
-			/* zu	*/ nvs_blob_key->blob_size
+		ESP_LOGD(TAG, "NVS context is loading blob \"%s\" of %zu byte(s) from partition \"s\".",
+			/* s	*/ nvs_blob_key	->blob_name,
+			/* zu	*/ nvs_blob_key	->blob_size,
+			/* s	*/ nvs_context	->nvs_partition
 		);
 	#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
 
 	// Extract the blob size.
-	size_t nvs_size = nvs_blob_key->blob_size;
+	size_t nvs_size = nvs_blob_key->size;
 
 	// Load the blob from the NVS context.
 	const esp_err_t nvs_error = nvs_get_blob(
 		/* c_handle		= */ nvs_context->nvs_handle,
-		/* key			= */ nvs_blob_key->blob_name,
+		/* key			= */ nvs_blob_key->name,
 		/* out_value	= */ nvs_blob_out,
 		/* length		= */ &nvs_size
 	);
@@ -47,20 +43,28 @@ esp_err_t slime_nvs_load_blob(
 	// than required.
 	if (	nvs_error	==	ESP_ERR_NVS_NOT_FOUND
 		||	nvs_error	==	ESP_ERR_NVS_INVALID_LENGTH
-		||	nvs_size	<	nvs_blob_key->blob_size
+		||	nvs_size	<	nvs_blob_key->size
 	) {
 		// Log the operation if NVS debug logging is enabled.
 		#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
 			ESP_LOGD(TAG, "Blob does not exist or the size does not match, resetting to default value.");
+			ESP_LOGD(TAG, "Default content of the NVS blob: ");
+			ESP_LOG_BUFFER_HEXDUMP(
+				/* tag		= */ TAG,
+				/* buffer	= */ nvs_blob_key->init,
+				/* buff_len	= */ nvs_blob_key->size,
+				/* level	= */ ESP_LOG_DEBUG
+			);
 		#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
 
 		// Copy the default value to the out handle.
 		memcpy(
 			/* dst_buffer	= */ nvs_blob_out,
-			/* src_buffer	= */ nvs_blob_key->blob_default,
-			/* length		= */ nvs_blob_key->blob_size
+			/* src_buffer	= */ nvs_blob_key->init,
+			/* length		= */ nvs_blob_key->size
 		);
 
+		// Log the operation if NVS debug logging is enabled.
 		#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
 			ESP_LOGD(TAG, "Saving default value to the NVS context.");
 		#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
@@ -74,12 +78,23 @@ esp_err_t slime_nvs_load_blob(
 
 		return ESP_OK;
 	} else if (nvs_error == ESP_OK) {
+		// Log the result if NVS debug logging is enabled.
+		#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
+			ESP_LOGD(TAG, "Loaded content of the NVS blob: ");
+			ESP_LOG_BUFFER_HEXDUMP(
+				/* tag		= */ TAG,
+				/* buffer	= */ nvs_blob_out,
+				/* buff_len	= */ nvs_blob_key->size,
+				/* level	= */ ESP_LOG_DEBUG
+			);
+		#endif
+
 		// Return if the blob was successfully read get from the NVS context.
 		return ESP_OK;
 	}
 
 	// Log the unexpected error.
-	ESP_LOGE(TAG, "Unexpected NVS error \"%s\" occurred when getting blob from NVS context.", esp_err_to_name(nvs_error));
+	ESP_LOGE(TAG, "Failed to load blob from NVS context: %s.", esp_err_to_name(nvs_error));
 	return nvs_error;
 }
 
@@ -95,18 +110,26 @@ esp_err_t slime_nvs_save_blob(
 
 	// Log the operation if NVS debug logging is enabled.
 	#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Saving blob \"%s\" of %zu byte(s) to NVS context.",
-			/* s	*/ nvs_blob_key->blob_name,
-			/* zu	*/ nvs_blob_key->blob_size
+		ESP_LOGD(TAG, "NVS context is saving blob \"%s\" of %zu byte(s) to partition \"%s\".",
+			/* s	*/ nvs_blob_key	->blob_name,
+			/* zu	*/ nvs_blob_key	->blob_size,
+			/* s	*/ nvs_context	->nvs_partition
+		);
+		ESP_LOGD(TAG, "Saved content of the NVS blob: ");
+		ESP_LOG_BUFFER_HEXDUMP(
+			/* tag		= */ TAG,
+			/* buffer	= */ nvs_blob_in,
+			/* buff_len	= */ nvs_blob_key->size,
+			/* level	= */ ESP_LOG_DEBUG
 		);
 	#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
 
 	// Set the data of the blob at the NVS partition.
 	ESP_RETURN_ON_ERROR(nvs_set_blob(
 		/* c_handle	= */ nvs_context->nvs_handle,
-		/* key		= */ nvs_blob_key->blob_name,
+		/* key		= */ nvs_blob_key->name,
 		/* value	= */ nvs_blob_in,
-		/* length	= */ nvs_blob_key->blob_size
+		/* length	= */ nvs_blob_key->size
 	), TAG, "Failed to set NVS blob data.");
 
 	// Commit the data to NVS flash.
@@ -130,42 +153,31 @@ esp_err_t slime_nvs_context_new(
 		ESP_LOGD(TAG, "Creating NVS context.");
 	#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
 
-	// Skip the NVS flash initialization if the NVS flash is already initialized or need to skip.
-	if (nvs_flash_initialized || nvs_context_config->nvs_skip_init) {
+	// Log the progress if NVS debug logging is enabled.
+	#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
+		ESP_LOGD(TAG, "Initializing NVS flash.");
+	#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
+
+	// Try initializing the NVS flash of the partition.
+	const esp_err_t nvs_error = nvs_flash_init_partition(nvs_context_config->partition);
+
+	if (	nvs_error == ESP_ERR_NVS_NO_FREE_PAGES
+		||	nvs_error == ESP_ERR_NVS_NEW_VERSION_FOUND
+	) {
 		// Log the progress if NVS debug logging is enabled.
 		#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
-			ESP_LOGD(TAG, "Skip the initialization of NVS flash.");
-		#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
-	} else {
-		// Log the progress if NVS debug logging is enabled.
-		#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
-			ESP_LOGD(TAG, "Initializing NVS flash.");
+			ESP_LOGD(TAG, "Fail to initialize NVS flash, erase then try again.");
 		#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
 
-		// Try initializing the NVS flash.
-		const esp_err_t nvs_error = nvs_flash_init();
-
-		if (	nvs_error == ESP_ERR_NVS_NO_FREE_PAGES
-			||	nvs_error == ESP_ERR_NVS_NEW_VERSION_FOUND
-		) {
-			// Log the progress if NVS debug logging is enabled.
-			#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
-				ESP_LOGD(TAG, "Fail to initialize NVS flash, erase then try again.");
-			#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
-
-			// Erase the NVS flash then re-initialize the NVS flash if no free space or incompatible version.
-			ESP_RETURN_ON_ERROR(nvs_flash_erase	(), TAG, "Failed to erase NVS flash.");
-			ESP_RETURN_ON_ERROR(nvs_flash_init	(), TAG, "Failed to initialize NVS flash.");
-		} else if (nvs_error != ESP_OK) {
-			// Log the unexpected error.
-			ESP_LOGE(TAG, "Unexpected NVS error \"%s\" occurred when initializing NVS flash.", esp_err_to_name(nvs_error));
-			// Abort.
-			return nvs_error;
-		}
+		// Erase the NVS flash of the partition then re-initialize the NVS flash if no free space or incompatible version.
+		ESP_RETURN_ON_ERROR(nvs_flash_erase	(), TAG, "Failed to erase NVS flash.");
+		ESP_RETURN_ON_ERROR(nvs_flash_init	(), TAG, "Failed to initialize NVS flash.");
+	} else if (nvs_error != ESP_OK) {
+		// Log the unexpected error.
+		ESP_LOGE(TAG, "Failed to initialize NVS flash: %s.", esp_err_to_name(nvs_error));
+		// Abort.
+		return nvs_error;
 	}
-
-	// Mark the NVS flash initialized.
-	nvs_flash_initialized = true;
 
 	// Log the progress if NVS debug logging is enabled.
 	#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
@@ -182,8 +194,8 @@ esp_err_t slime_nvs_context_new(
 
 	// Open the NVS partition.
 	ESP_RETURN_ON_ERROR(nvs_open_from_partition(
-		/* part_name		= */ nvs_context_config->nvs_partition,
-		/* namespace_name	= */ nvs_context_config->nvs_namespace,
+		/* part_name		= */ nvs_context_config->partition,
+		/* namespace_name	= */ nvs_context_config->namespace,
 		/* open_mode		= */ NVS_READWRITE,
 		/* out_handle		= */ &context_nvs_handle
 	), TAG, "Failed to open NVS partition.");
@@ -213,7 +225,8 @@ esp_err_t slime_nvs_context_new(
 	#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
 
 	// Fill the NVS context.
-	nvs_context->nvs_handle = context_nvs_handle;
+	nvs_context->partition	= nvs_context_config->partition;
+	nvs_context->nvs_handle	= context_nvs_handle;
 
 	// Return the created NVS context.
 	*nvs_context_out = nvs_context;
@@ -237,6 +250,9 @@ esp_err_t slime_nvs_context_new(
 	// Only NVS partition is opened here, close the NVS partition.
 	nvs_close(context_nvs_handle);
 
+	// De-initialize the NVS flash of the partition.
+	nvs_flash_deinit_partition(nvs_context_config->partition);
+
 	return ret;
 }
 
@@ -256,6 +272,14 @@ esp_err_t slime_nvs_context_del(slime_nvs_context_t* nvs_context_in) {
 
 	// Close the NVS partition.
 	nvs_close(nvs_context_in->nvs_handle);
+
+	// Log the progress if NVS debug logging is enabled.
+	#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING
+		ESP_LOGD(TAG, "De-initializing NVS flash.");
+	#endif // CONFIG_SLIME_NVS_DEBUG_LOGGING
+
+	// De-initialize the NVS flash of the partition.
+	nvs_flash_deinit_partition(nvs_context_in->partition);
 
 	// Log the progress if NVS debug logging is enabled.
 	#ifdef CONFIG_SLIME_NVS_DEBUG_LOGGING

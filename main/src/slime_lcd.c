@@ -17,13 +17,13 @@ static const char* LCD_TAG = "slime_lcd";
 
 esp_err_t slime_lcd_context_new(
 			slime_lcd_context_t**		lcd_context_out,
-	const	slime_gpio_context_t*		gpio_context,
-	const	slime_lcd_context_config_t*	lcd_context_config
+	const	slime_lcd_context_config_t*	lcd_context_config,
+	const	slime_gpio_context_t*		gpio_context
 ) {
 	esp_err_t ret = ESP_OK;
 
 	// We cannot proceed without a configuration, a GPIO context, and a handle to receive the created LCD context.
-	ESP_RETURN_ON_FALSE(lcd_context_out		!= NULL, ESP_ERR_INVALID_ARG, LCD_TAG, "No lcd_context_out handle provided when creating LCD context.");
+	ESP_RETURN_ON_FALSE(lcd_context_out		!= NULL, ESP_ERR_INVALID_ARG, LCD_TAG, "No slime_lcd_context_t handle provided when creating LCD context.");
 	ESP_RETURN_ON_FALSE(lcd_context_config	!= NULL, ESP_ERR_INVALID_ARG, LCD_TAG, "No slime_lcd_context_config_t handle provided when creating LCD context.");
 	ESP_RETURN_ON_FALSE(gpio_context		!= NULL, ESP_ERR_INVALID_ARG, LCD_TAG, "No slime_gpio_context_t handle provided when creating LCD context.");
 
@@ -53,7 +53,7 @@ esp_err_t slime_lcd_context_new(
 	// Initialize the SPI bus.
 	ESP_GOTO_ON_ERROR(spi_bus_initialize(
 		/* host_id		= */ SPI2_HOST,
-		/* bus_config	= */ &lcd_context_config->lcd_spi_bus_config,
+		/* bus_config	= */ &lcd_context_config->spi_bus_config,
 		/* dma_chan		= */ SPI_DMA_CH_AUTO
 	), error, SPI_TAG, "Failed to initialize SPI bus.");
 
@@ -71,9 +71,9 @@ esp_err_t slime_lcd_context_new(
 	#endif // CONFIG_SLIME_LCD_DEBUG_LOGGING
 
 	// Create the LCD panel device
-	ESP_GOTO_ON_ERROR(esp_lcd_new_panel_io_spi	(SPI2_HOST,			&lcd_context_config->lcd_panel_io_spi_config,	&context_panel_io),						error, LCD_TAG, "Failed to create SPI LCD panel IO.");
-	ESP_GOTO_ON_ERROR(esp_lcd_new_panel_st7735	(context_panel_io,	&lcd_context_config->lcd_panel_device_config,	&context_panel),						error, LCD_TAG, "Failed to create LCD panel device.");
-	ESP_GOTO_ON_ERROR(esp_lcd_panel_set_gap		(context_panel,		lcd_context_config->lcd_gap_offset_x,			lcd_context_config->lcd_gap_offset_y),	error, LCD_TAG, "Failed to set LCD gap offsets.");
+	ESP_GOTO_ON_ERROR(esp_lcd_new_panel_io_spi	(SPI2_HOST,			&lcd_context_config->panel_io_spi_config,	&context_panel_io),					error, LCD_TAG, "Failed to create SPI LCD panel IO.");
+	ESP_GOTO_ON_ERROR(esp_lcd_new_panel_st7735	(context_panel_io,	&lcd_context_config->panel_device_config,	&context_panel),					error, LCD_TAG, "Failed to create LCD panel device.");
+	ESP_GOTO_ON_ERROR(esp_lcd_panel_set_gap		(context_panel,		lcd_context_config->gap_offset_x,			lcd_context_config->gap_offset_y),	error, LCD_TAG, "Failed to set LCD gap offsets.");
 
 	// Log the progress if LCD panel debug logging is enabled.
 	#ifdef CONFIG_SLIME_LCD_DEBUG_LOGGING
@@ -89,7 +89,7 @@ esp_err_t slime_lcd_context_new(
 			ESP_LOGD(LCD_TAG, "Creating LCD context struct.");
 	#endif // CONFIG_SLIME_LCD_DEBUG_LOGGING
 
-	// Allocate the LCD context handle.
+	// Create the LCD context handle.
 	lcd_context = calloc(1, sizeof(slime_lcd_context_t));
 
 	// Check the allocation.
@@ -133,7 +133,7 @@ esp_err_t slime_lcd_context_new(
 }
 
 esp_err_t slime_lcd_context_del(slime_lcd_context_t* lcd_context_in) {
-	// We cannot proceed without a handle.
+	// We cannot proceed without a context.
 	ESP_RETURN_ON_FALSE(lcd_context_in != NULL, ESP_ERR_INVALID_ARG, LCD_TAG, "No slime_lcd_context_t handle provided when releasing LCD context.");
 
 	// Log the progress if LCD debug logging is enabled.
@@ -163,7 +163,7 @@ esp_err_t slime_lcd_context_del(slime_lcd_context_t* lcd_context_in) {
 		ESP_LOGD(LCD_TAG, "Detaching all fields of the LCD context.");
 	#endif // CONFIG_SLIME_LCD_DEBUG_LOGGING
 
-	// Detaching all fields.
+	// Detach all fields.
 	lcd_context_in->panel_io_handle	= NULL;
 	lcd_context_in->panel_handle	= NULL;
 	lcd_context_in->gpio_context	= NULL;

@@ -15,11 +15,11 @@ extern "C" {
  * @brief The configuration struct of the LCD context.
  */
 typedef struct {
-	spi_bus_config_t				lcd_spi_bus_config;			/*!< The SPI bus configuration of the LCD. */
-	esp_lcd_panel_io_spi_config_t	lcd_panel_io_spi_config;	/*!< The SPI panel IO configuration of the LCD. */
-	esp_lcd_panel_dev_config_t		lcd_panel_device_config;	/*!< The configuration of the panel device of the LCD. */
-	uint32_t						lcd_gap_offset_x;			/*!< The vendor specific gap offset X in pixels of the LCD. */
-	uint32_t						lcd_gap_offset_y;			/*!< The vendor specific gap offset Y in pixels of the LCD. */
+	spi_bus_config_t				spi_bus_config;			/*!< The SPI bus configuration of the LCD. */
+	esp_lcd_panel_io_spi_config_t	panel_io_spi_config;	/*!< The SPI panel IO configuration of the LCD. */
+	esp_lcd_panel_dev_config_t		panel_device_config;	/*!< The configuration of the panel device of the LCD. */
+	uint32_t						gap_offset_x;			/*!< The vendor specific gap offset X in pixels of the LCD. */
+	uint32_t						gap_offset_y;			/*!< The vendor specific gap offset Y in pixels of the LCD. */
 } slime_lcd_context_config_t;
 
 /**
@@ -40,8 +40,8 @@ typedef struct {
  */
 esp_err_t slime_lcd_context_new(
 			slime_lcd_context_t**		lcd_context_out,
-	const	slime_gpio_context_t*		gpio_context,
-	const	slime_lcd_context_config_t*	lcd_context_config
+	const	slime_lcd_context_config_t*	lcd_context_config,
+	const	slime_gpio_context_t*		gpio_context
 );
 
 /**

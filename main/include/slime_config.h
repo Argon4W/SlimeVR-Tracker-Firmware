@@ -7,6 +7,8 @@
 #include "slime_lcd.h"
 #include "slime_screen.h"
 #include "slime_button.h"
+#include "slime_magneto.h"
+#include "slime_sensor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +43,16 @@ extern const slime_screen_context_config_t screen_context_config;
  * @brief The configuration of the button context.
  */
 extern const slime_button_context_config_t button_context_config;
+
+/**
+ * @brief The configuration of the magneto context.
+ */
+extern const slime_magneto_context_config_t slime_magneto_context_config;
+
+/**
+ * @brief The table of the sensor context types by sensor board ID.
+ */
+extern const slime_sensor_type_t slime_sensor_type_table[8];
 
 #ifdef __cplusplus
 }

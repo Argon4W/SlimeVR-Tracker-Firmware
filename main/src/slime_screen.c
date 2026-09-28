@@ -112,8 +112,8 @@ esp_err_t slime_screen_draw_rectangle_masked(
 		/* size_y			= */ size_y,
 		/* bitmask_offset_x	= */ bitmask_offset_x,
 		/* bitmask_offset_y	= */ bitmask_offset_y,
-		/* bitmask_size_x	= */ bitmask_info->bitmask_size_x,
-		/* bitmask_flipped	= */ bitmask_info->bitmask_flipped,
+		/* bitmask_size_x	= */ bitmask_info->data_size_x,
+		/* bitmask_flipped	= */ bitmask_info->data_flipped,
 		/* color_rgba8888	= */ color_rgba8888,
 		/* bitmask_rgb565	= */ bitmask_info->bitmask_data
 	), TAG, "Failed to draw pixel on the screen.");
@@ -145,8 +145,8 @@ esp_err_t slime_screen_draw_native_rectangle_masked(
 		/* size_y			= */ size_y,
 		/* bitmask_offset_x	= */ bitmask_offset_x,
 		/* bitmask_offset_y	= */ bitmask_offset_y,
-		/* bitmask_size_x	= */ bitmask_info->bitmask_size_x,
-		/* bitmask_flipped	= */ bitmask_info->bitmask_flipped,
+		/* bitmask_size_x	= */ bitmask_info->data_size_x,
+		/* bitmask_flipped	= */ bitmask_info->data_flipped,
 		/* color_rgb565		= */ color_rgb565,
 		/* bitmask_rgb565	= */ bitmask_info->bitmask_data
 	), TAG, "Failed to draw pixel on the screen.");
@@ -169,7 +169,7 @@ esp_err_t slime_screen_draw_bitmap(
 	ESP_RETURN_ON_FALSE(screen_context	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_screen_context_t provided when performing drawing a bitmap.");
 	ESP_RETURN_ON_FALSE(bitmap_info		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_screen_bitmap_info_t provided when performing drawing a bitmap.");
 
-	switch (bitmap_info->bitmap_color_type) {
+	switch (bitmap_info->data_color_type) {
 		case RGBA8888:
 			// Draw the translucent bitmap if the color type is RGBA8888.
 			ESP_RETURN_ON_ERROR(esp_fast_lcd_draw_bitmap(
@@ -180,8 +180,8 @@ esp_err_t slime_screen_draw_bitmap(
 				/* size_y					= */ size_y,
 				/* bitmap_offset_x			= */ bitmap_offset_x,
 				/* bitmap_offset_y			= */ bitmap_offset_y,
-				/* bitmap_size_x			= */ bitmap_info->bitmap_size_x,
-				/* bitmap_pre_multiplied	= */ bitmap_info->bitmap_optimized,
+				/* bitmap_size_x			= */ bitmap_info->data_size_x,
+				/* bitmap_pre_multiplied	= */ bitmap_info->data_optimized,
 				/* bitmap_a8_multiplier		= */ bitmap_a8_multiplier,
 				/* bitmap_rgba8888			= */ bitmap_info->bitmap_data_0
 			), TAG, "Failed to draw translucent bitmap on the screen.");
@@ -196,8 +196,8 @@ esp_err_t slime_screen_draw_bitmap(
 				/* size_y					= */ size_y,
 				/* bitmap_offset_x			= */ bitmap_offset_x,
 				/* bitmap_offset_y			= */ bitmap_offset_y,
-				/* bitmap_size_x			= */ bitmap_info->bitmap_size_x,
-				/* bitmap_flipped			= */ bitmap_info->bitmap_optimized,
+				/* bitmap_size_x			= */ bitmap_info->data_size_x,
+				/* bitmap_flipped			= */ bitmap_info->data_optimized,
 				/* bitmap_a8_multiplier		= */ bitmap_a8_multiplier,
 				/* bitmap_rgb565_pre_mul	= */ bitmap_info->bitmap_data_0,
 				/* bitmap_a8_inv			= */ bitmap_info->bitmap_data_1
@@ -213,8 +213,8 @@ esp_err_t slime_screen_draw_bitmap(
 				/* size_y				= */ size_y,
 				/* bitmap_offset_x		= */ bitmap_offset_x,
 				/* bitmap_offset_y		= */ bitmap_offset_y,
-				/* bitmap_size_x		= */ bitmap_info->bitmap_size_x,
-				/* bitmap_flipped		= */ bitmap_info->bitmap_optimized,
+				/* bitmap_size_x		= */ bitmap_info->data_size_x,
+				/* bitmap_flipped		= */ bitmap_info->data_optimized,
 				/* bitmap_a8_multiplier	= */ bitmap_a8_multiplier,
 				/* bitmap_rgb565		= */ bitmap_info->bitmap_data_0
 			), TAG, "Failed to draw opaque native bitmap on the screen.");
@@ -246,7 +246,7 @@ esp_err_t slime_screen_draw_bitmap_masked(
 	ESP_RETURN_ON_FALSE(bitmap_info		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_screen_bitmap_info_t provided when performing drawing a masked bitmap.");
 	ESP_RETURN_ON_FALSE(bitmask_info	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_screen_bitmask_info_t provided when performing drawing a masked bitmap.");
 
-	switch (bitmap_info->bitmap_color_type) {
+	switch (bitmap_info->data_color_type) {
 		case RGBA8888:
 			// Draw the translucent bitmap if the color type is RGBA8888.
 			ESP_RETURN_ON_ERROR(esp_fast_lcd_draw_bitmap_masked(
@@ -257,12 +257,12 @@ esp_err_t slime_screen_draw_bitmap_masked(
 				/* size_y					= */ size_y,
 				/* bitmap_offset_x			= */ bitmap_offset_x,
 				/* bitmap_offset_y			= */ bitmap_offset_y,
-				/* bitmap_size_x			= */ bitmap_info->bitmap_size_x,
+				/* bitmap_size_x			= */ bitmap_info->data_size_x,
 				/* bitmask_offset_x			= */ bitmask_offset_x,
 				/* bitmask_offset_y			= */ bitmask_offset_y,
-				/* bitmask_size_x			= */ bitmask_info->bitmask_size_x,
-				/* bitmap_pre_multiplied	= */ bitmap_info->bitmap_optimized,
-				/* bitmask_flipped			= */ bitmask_info->bitmask_flipped,
+				/* bitmask_size_x			= */ bitmask_info->data_size_x,
+				/* bitmap_pre_multiplied	= */ bitmap_info->data_optimized,
+				/* bitmask_flipped			= */ bitmask_info->data_flipped,
 				/* bitmap_a8_multiplier		= */ bitmap_a8_multiplier,
 				/* bitmap_rgba8888			= */ bitmap_info->bitmap_data_0,
 				/* bitmask_rgb565			= */ bitmask_info->bitmask_data
@@ -278,12 +278,12 @@ esp_err_t slime_screen_draw_bitmap_masked(
 				/* size_y					= */ size_y,
 				/* bitmap_offset_x			= */ bitmap_offset_x,
 				/* bitmap_offset_y			= */ bitmap_offset_y,
-				/* bitmap_size_x			= */ bitmap_info->bitmap_size_x,
+				/* bitmap_size_x			= */ bitmap_info->data_size_x,
 				/* bitmask_offset_x			= */ bitmask_offset_x,
 				/* bitmask_offset_y			= */ bitmask_offset_y,
-				/* bitmask_size_x			= */ bitmask_info->bitmask_size_x,
-				/* bitmap_flipped			= */ bitmap_info->bitmap_optimized,
-				/* bitmask_flipped			= */ bitmask_info->bitmask_flipped,
+				/* bitmask_size_x			= */ bitmask_info->data_size_x,
+				/* bitmap_flipped			= */ bitmap_info->data_optimized,
+				/* bitmask_flipped			= */ bitmask_info->data_flipped,
 				/* bitmap_a8_multiplier		= */ bitmap_a8_multiplier,
 				/* bitmap_rgb565_pre_mul	= */ bitmap_info->bitmap_data_0,
 				/* bitmap_a8_inv			= */ bitmap_info->bitmap_data_1,
@@ -300,12 +300,12 @@ esp_err_t slime_screen_draw_bitmap_masked(
 				/* size_y				= */ size_y,
 				/* bitmap_offset_x		= */ bitmap_offset_x,
 				/* bitmap_offset_y		= */ bitmap_offset_y,
-				/* bitmap_size_x		= */ bitmap_info->bitmap_size_x,
+				/* bitmap_size_x		= */ bitmap_info->data_size_x,
 				/* bitmask_offset_x		= */ bitmask_offset_x,
 				/* bitmask_offset_y		= */ bitmask_offset_y,
-				/* bitmask_size_x		= */ bitmask_info->bitmask_size_x,
-				/* bitmap_flipped		= */ bitmap_info->bitmap_optimized,
-				/* bitmask_flipped		= */ bitmask_info->bitmask_flipped,
+				/* bitmask_size_x		= */ bitmask_info->data_size_x,
+				/* bitmap_flipped		= */ bitmap_info->data_optimized,
+				/* bitmask_flipped		= */ bitmask_info->data_flipped,
 				/* bitmap_a8_multiplier	= */ bitmap_a8_multiplier,
 				/* bitmap_rgb565		= */ bitmap_info->bitmap_data_0,
 				/* bitmask_rgb565		= */ bitmask_info->bitmask_data
@@ -332,8 +332,8 @@ esp_err_t slime_screen_draw_glyph(
 	ESP_RETURN_ON_FALSE(text_style		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No text_style provided when performing drawing a glyph.");
 
 	// Draw outlined glyph if the style is outlined.
-	if (text_style->text_outlined) {
-		switch (text_style->text_color_type) {
+	if (text_style->outlined) {
+		switch (text_style->color_type) {
 			case RGBA8888:
 				// Draw the translucent glyph if the color type is RGBA8888.
 				ESP_RETURN_ON_ERROR(esp_fast_text_engine_draw_outlined_glyph(
@@ -342,8 +342,8 @@ esp_err_t slime_screen_draw_glyph(
 					/* codepoint				= */ codepoint,
 					/* position_x				= */ position_x,
 					/* position_y				= */ position_y,
-					/* color_rgba8888			= */ text_style->text_color,
-					/* color_outline_rgba8888	= */ text_style->text_outline_color,
+					/* color_rgba8888			= */ text_style->color_text,
+					/* color_outline_rgba8888	= */ text_style->color_outline,
 					/* advance_x				= */ advance_x
 				), TAG, "Failed to draw translucent outlined glyph on the screen.");
 				break;
@@ -355,8 +355,8 @@ esp_err_t slime_screen_draw_glyph(
 					/* codepoint			= */ codepoint,
 					/* position_x			= */ position_x,
 					/* position_y			= */ position_y,
-					/* color_rgb565			= */ text_style->text_color,
-					/* color_outline_rgb565	= */ text_style->text_outline_color,
+					/* color_rgb565			= */ text_style->color_text,
+					/* color_outline_rgb565	= */ text_style->color_outline,
 					/* advance_x			= */ advance_x
 				), TAG, "Failed to draw opaque native outlined glyph on the screen.");
 				break;
@@ -365,7 +365,7 @@ esp_err_t slime_screen_draw_glyph(
 				return ESP_ERR_INVALID_ARG;
 		}
 	} else {
-		switch (text_style->text_color_type) {
+		switch (text_style->color_type) {
 			case RGBA8888:
 				// Draw the translucent glyph if the color type is RGBA8888.
 				ESP_RETURN_ON_ERROR(esp_fast_text_engine_draw_glyph(
@@ -374,7 +374,7 @@ esp_err_t slime_screen_draw_glyph(
 					/* codepoint			= */ codepoint,
 					/* position_x			= */ position_x,
 					/* position_y			= */ position_y,
-					/* color_rgba8888		= */ text_style->text_color,
+					/* color_rgba8888		= */ text_style->color_text,
 					/* advance_x			= */ advance_x
 				), TAG, "Failed to draw translucent glyph on the screen.");
 				break;
@@ -386,7 +386,7 @@ esp_err_t slime_screen_draw_glyph(
 					/* codepoint			= */ codepoint,
 					/* position_x			= */ position_x,
 					/* position_y			= */ position_y,
-					/* color_rgb565			= */ text_style->text_color,
+					/* color_rgb565			= */ text_style->color_text,
 					/* advance_x			= */ advance_x
 				), TAG, "Failed to draw opaque native glyph on the screen.");
 				break;
@@ -411,8 +411,8 @@ esp_err_t slime_screen_draw_string(
 	ESP_RETURN_ON_FALSE(text_style		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No text_style provided when performing drawing a string.");
 
 	// Draw outlined glyph if the style is outlined.
-	if (text_style->text_outlined) {
-		switch (text_style->text_color_type) {
+	if (text_style->outlined) {
+		switch (text_style->color_type) {
 			case RGBA8888:
 				// Draw the translucent string if the color type is RGBA8888.
 				ESP_RETURN_ON_ERROR(esp_fast_text_engine_draw_outlined_string(
@@ -420,8 +420,8 @@ esp_err_t slime_screen_draw_string(
 					/* panel_device_context		= */ screen_context->fast_lcd_panel_device,
 					/* position_x				= */ position_x,
 					/* position_y				= */ position_y,
-					/* color_rgba8888			= */ text_style->text_color,
-					/* color_outline_rgba8888	= */ text_style->text_outline_color,
+					/* color_rgba8888			= */ text_style->color_text,
+					/* color_outline_rgba8888	= */ text_style->color_outline,
 					/* string					= */ string
 				), TAG, "Failed to draw translucent outlined string on the screen.");
 				break;
@@ -432,8 +432,8 @@ esp_err_t slime_screen_draw_string(
 					/* panel_device_context	= */ screen_context->fast_lcd_panel_device,
 					/* position_x			= */ position_x,
 					/* position_y			= */ position_y,
-					/* color_rgb565			= */ text_style->text_color,
-					/* color_outline_rgb565	= */ text_style->text_outline_color,
+					/* color_rgb565			= */ text_style->color_text,
+					/* color_outline_rgb565	= */ text_style->color_outline,
 					/* string				= */ string
 				), TAG, "Failed to draw opaque native outlined string on the screen.");
 				break;
@@ -442,7 +442,7 @@ esp_err_t slime_screen_draw_string(
 				return ESP_ERR_INVALID_ARG;
 		}
 	} else {
-		switch (text_style->text_color_type) {
+		switch (text_style->color_type) {
 			case RGBA8888:
 				// Draw the translucent string if the color type is RGBA8888.
 				ESP_RETURN_ON_ERROR(esp_fast_text_engine_draw_string(
@@ -450,7 +450,7 @@ esp_err_t slime_screen_draw_string(
 					/* panel_device_context	= */ screen_context->fast_lcd_panel_device,
 					/* position_x			= */ position_x,
 					/* position_y			= */ position_y,
-					/* color_rgba8888		= */ text_style->text_color,
+					/* color_rgba8888		= */ text_style->color_text,
 					/* string				= */ string
 				), TAG, "Failed to draw translucent string on the screen.");
 				break;
@@ -461,7 +461,7 @@ esp_err_t slime_screen_draw_string(
 					/* panel_device_context	= */ screen_context->fast_lcd_panel_device,
 					/* position_x			= */ position_x,
 					/* position_y			= */ position_y,
-					/* color_rgb565			= */ text_style->text_color,
+					/* color_rgb565			= */ text_style->color_text,
 					/* string				= */ string
 				), TAG, "Failed to draw opaque native string on the screen.");
 				break;
@@ -491,8 +491,8 @@ esp_err_t slime_screen_draw_string_fmt(
 	va_start(args, string);
 
 	// Draw outlined glyph if the style is outlined.
-	if (text_style->text_outlined) {
-		switch (text_style->text_color_type) {
+	if (text_style->outlined) {
+		switch (text_style->color_type) {
 			case RGBA8888:
 				// Draw the translucent string if the color type is RGBA8888.
 				ESP_RETURN_ON_ERROR(esp_fast_text_engine_draw_outlined_string_vfmt(
@@ -500,8 +500,8 @@ esp_err_t slime_screen_draw_string_fmt(
 					/* panel_device_context		= */ screen_context->fast_lcd_panel_device,
 					/* position_x				= */ position_x,
 					/* position_y				= */ position_y,
-					/* color_rgba8888			= */ text_style->text_color,
-					/* color_outline_rgba8888	= */ text_style->text_outline_color,
+					/* color_rgba8888			= */ text_style->color_text,
+					/* color_outline_rgba8888	= */ text_style->color_outline,
 					/* string					= */ string,
 					/* args						= */ args
 				), TAG, "Failed to draw translucent outlined string on the screen.");
@@ -513,8 +513,8 @@ esp_err_t slime_screen_draw_string_fmt(
 					/* panel_device_context	= */ screen_context->fast_lcd_panel_device,
 					/* position_x			= */ position_x,
 					/* position_y			= */ position_y,
-					/* color_rgb565			= */ text_style->text_color,
-					/* color_outline_rgb565	= */ text_style->text_outline_color,
+					/* color_rgb565			= */ text_style->color_text,
+					/* color_outline_rgb565	= */ text_style->color_outline,
 					/* string				= */ string,
 					/* args					= */ args
 				), TAG, "Failed to draw opaque native outlined string on the screen.");
@@ -524,7 +524,7 @@ esp_err_t slime_screen_draw_string_fmt(
 				return ESP_ERR_INVALID_ARG;
 		}
 	} else {
-		switch (text_style->text_color_type) {
+		switch (text_style->color_type) {
 			case RGBA8888:
 				// Draw the translucent string if the color type is RGBA8888.
 				ESP_RETURN_ON_ERROR(esp_fast_text_engine_draw_string_vfmt(
@@ -532,7 +532,7 @@ esp_err_t slime_screen_draw_string_fmt(
 					/* panel_device_context	= */ screen_context->fast_lcd_panel_device,
 					/* position_x			= */ position_x,
 					/* position_y			= */ position_y,
-					/* color_rgba8888		= */ text_style->text_color,
+					/* color_rgba8888		= */ text_style->color_text,
 					/* string				= */ string,
 					/* args					= */ args
 				), TAG, "Failed to draw translucent string on the screen.");
@@ -544,7 +544,7 @@ esp_err_t slime_screen_draw_string_fmt(
 					/* panel_device_context	= */ screen_context->fast_lcd_panel_device,
 					/* position_x			= */ position_x,
 					/* position_y			= */ position_y,
-					/* color_rgb565			= */ text_style->text_color,
+					/* color_rgb565			= */ text_style->color_text,
 					/* string				= */ string,
 					/* args					= */ args
 				), TAG, "Failed to draw opaque native string on the screen.");

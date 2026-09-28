@@ -13,17 +13,17 @@ extern "C" {
  */
 typedef struct {
 	i2c_master_bus_config_t	i2c_master_bus_config;	/*!< The master bus configuration of the I2C. */
-	i2c_device_config_t		i2c_imu_device_config;	/*!< The I2C master device configuration of the IMU. */
-	i2c_device_config_t		i2c_mag_device_config;	/*!< The I2C master device configuration of the Magnetometer. */
+	i2c_device_config_t		imu_device_config;		/*!< The I2C master device configuration of the IMU. */
+	i2c_device_config_t		mag_device_config;		/*!< The I2C master device configuration of the Magnetometer. */
 } slime_i2c_context_config_t;
 
 /**
  * @brief The I2C context struct.
  */
 typedef struct {
-	i2c_master_bus_handle_t i2c_master_bus;			/*!< The I2C master bus handle. */
-	i2c_master_dev_handle_t i2c_imu_device_handle;	/*!< I2C master device handle for IMU. */
-	i2c_master_dev_handle_t i2c_mag_device_handle;	/*!< I2C master device handle for magnetometer. */
+	i2c_master_bus_handle_t i2c_master_bus;		/*!< The I2C master bus handle. */
+	i2c_master_dev_handle_t imu_device_handle;	/*!< I2C master device handle for IMU. */
+	i2c_master_dev_handle_t mag_device_handle;	/*!< I2C master device handle for magnetometer. */
 } slime_i2c_context_t;
 
 /**
@@ -54,6 +54,19 @@ int32_t slime_i2c_read_register(
 	uint8_t		register_address,
 	uint8_t*	read_buffer,
 	uint16_t	read_length
+);
+
+/**
+ * @brief						Set the addresses of the I2C devices of the given I2C context.
+ * @param i2c_context			The I2C context of the devices to be set address.
+ * @param imu_device_address	The new IMU I2C device address in 7-bit format.
+ * @param mag_device_address	The new Magnetometer I2C device address in 7-bit format.
+ * @return						The status of setting addresses.
+ */
+esp_err_t slime_i2c_set_device_address(
+	const	slime_i2c_context_t*	i2c_context,
+			uint8_t					imu_device_address,
+			uint8_t					mag_device_address
 );
 
 /**

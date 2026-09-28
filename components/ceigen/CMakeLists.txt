@@ -1,5 +1,6 @@
 idf_component_register(
-		SRCS "./ceigen.cpp"
-		INCLUDE_DIRS "./"
+		SRC_DIRS "./src/"
+		INCLUDE_DIRS "./include/"
+		PRIV_INCLUDE_DIRS "./priv_include/"
 		REQUIRES eigen
 )

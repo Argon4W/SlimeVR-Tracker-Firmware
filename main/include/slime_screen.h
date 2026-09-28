@@ -16,20 +16,20 @@ extern "C" {
  * @brief The configuration struct of the transmission task of the screen context.
  */
 typedef struct {
-	uint32_t transmit_task_framerate;	/*!< The framerate of the transmission task. */
-	uint32_t transmit_task_core_id;		/*!< The core ID of the transmission task. */
-	uint32_t transmit_task_stack_depth;	/*!< The stack depth of the transmission task. */
-	uint32_t transmit_task_priority;	/*!< The priority of the transmission task. */
+	uint32_t transmit_framerate;	/*!< The framerate of the transmission task. */
+	uint32_t task_core_id;			/*!< The core ID of the transmission task. */
+	uint32_t task_stack_depth;		/*!< The stack depth of the transmission task. */
+	uint32_t task_priority;			/*!< The priority of the transmission task. */
 } slime_screen_transmit_task_config_t;
 
 /**
  * @brief The configuration struct of the screen context.
  */
 typedef struct {
-	slime_screen_transmit_task_config_t				screen_transmit_task_config;				/*!< The transmission task configuration of the screen. */
-	esp_fast_lcd_panel_configuration_t				screen_fast_lcd_panel_config;				/*!< The fast LCD panel device configuration of the screen. */
-	esp_fast_text_engine_instance_configuration_t	screen_fast_text_engine_instance_config;	/*!< The fast text engine configuration of the screen. */
-	esp_fast_text_engine_font_t						screen_fast_text_engine_font;				/*!< The font info used by the screen. */
+	slime_screen_transmit_task_config_t				transmit_task_config;				/*!< The transmission task configuration of the screen. */
+	esp_fast_lcd_panel_configuration_t				fast_lcd_panel_config;				/*!< The fast LCD panel device configuration of the screen. */
+	esp_fast_text_engine_instance_configuration_t	fast_text_engine_instance_config;	/*!< The fast text engine configuration of the screen. */
+	esp_fast_text_engine_font_t						fast_text_engine_font;				/*!< The font info used by the screen. */
 } slime_screen_context_config_t;
 
 /**
@@ -56,9 +56,9 @@ typedef enum {
  * @brief The info struct of a bitmap.
  */
 typedef struct {
-	slime_screen_color_type_t	bitmap_color_type;	/*!< The color type of the bitmap. */
-	uint8_t						bitmap_optimized;	/*!< True if the bitmap is optimized (pre-multiplied for RGBA8888, flipped for RGB565 and its variants). */
-	uint32_t					bitmap_size_x;		/*!< The width of the bitmap in pixels. */
+	slime_screen_color_type_t	data_color_type;	/*!< The color type of the bitmap. */
+	uint8_t						data_optimized;		/*!< True if the bitmap is optimized (pre-multiplied for RGBA8888, flipped for RGB565 and its variants). */
+	uint32_t					data_size_x;		/*!< The width of the bitmap in pixels. */
 	void*						bitmap_data_0;		/*!< The first color data of the bitmap. */
 	void*						bitmap_data_1;		/*!< The second color data of the bitmap (for RGB565A8). */
 } slime_screen_bitmap_info_t;
@@ -67,19 +67,19 @@ typedef struct {
  * @brief The info struct of a bitmask.
  */
 typedef struct {
-	uint8_t		bitmask_flipped;	/*!< True if the bitmask is flipped (LSByte and MSByte swapped). */
-	uint32_t	bitmask_size_x;		/*!< The width of the bitmask in pixels. */
-	uint16_t*	bitmask_data;		/*!< The 16-bit mask data of the bitmask. */
+	uint8_t		data_flipped;	/*!< True if the bitmask is flipped (LSByte and MSByte swapped). */
+	uint32_t	data_size_x;	/*!< The width of the bitmask in pixels. */
+	uint16_t*	bitmask_data;	/*!< The 16-bit mask data of the bitmask. */
 } slime_screen_bitmask_info_t;
 
 /**
  * @brief The info struct of a text style.
  */
 typedef struct {
-	slime_screen_color_type_t	text_color_type;	/*!< The color type of the style, RGB565A8 is not allowed. */
-	uint32_t					text_color;			/*!< The color of the text. */
-	uint32_t					text_outline_color;	/*!< The color of the outline ring of the text. */
-	uint8_t						text_outlined;		/*!< True if the text of this style is outlined. */
+	slime_screen_color_type_t	color_type;		/*!< The color type of the style, RGB565A8 is not allowed. */
+	uint32_t					color_text;		/*!< The color of the text. */
+	uint32_t					color_outline;	/*!< The color of the outline ring of the text. */
+	uint8_t						outlined;		/*!< True if the style is outlined. */
 } slime_screen_text_style_t;
 
 /**
@@ -325,8 +325,8 @@ esp_err_t slime_screen_commit(const slime_screen_context_t* screen_context);
  */
 esp_err_t slime_screen_context_new(
 			slime_screen_context_t**		screen_context_out,
-			slime_lcd_context_t*			lcd_context,
-	const	slime_screen_context_config_t*	screen_context_config
+	const	slime_screen_context_config_t*	screen_context_config,
+			slime_lcd_context_t*			lcd_context
 );
 
 /**

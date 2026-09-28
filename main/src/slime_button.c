@@ -8,14 +8,6 @@
 static const char* TAG = "slime_button";
 
 /**
- * @brief The button callback context struct.
- */
-typedef struct {
-	slime_button_context_t*	button_context; /*!< The button context of the callback. */
-	slime_button_type_t		button_type;	/*!< The button type of the callback. */
-} slime_button_callback_context_t;
-
-/**
  * @brief									The callback function that is invoked when a button is short-press clicked.
  * @param button_handle						The clicked button handle.
  * @param button_callback_context_opaque	The button callback context of the callback function.
@@ -32,6 +24,11 @@ slime_button_type_t slime_button_poll_event(slime_button_context_t* button_conte
 	// Reserve the event received from the queue.
 	slime_button_type_t event;
 
+	// Log the operation if button debug logging is enabled.
+	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
+		ESP_LOGD(TAG, "Button context is polling events from the button event queue.");
+	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
+
 	// Try receiving an event from the queue immediately.
 	const BaseType_t result = xQueueReceive(
 		/* xQueue		= */ button_context->button_event_queue,
@@ -41,8 +38,22 @@ slime_button_type_t slime_button_poll_event(slime_button_context_t* button_conte
 
 	// Return the received event if an event was successfully received from the queue.
 	if (result == pdTRUE) {
+		// Log the discarded event if button debug logging is enabled.
+		#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
+			switch (event) {
+				case BUTTON_RETURN:		ESP_LOGD(TAG, "Button context has polled a return button click event from the queue.");		break;
+				case BUTTON_SWITCH:		ESP_LOGD(TAG, "Button context has polled a switch button click event from the queu.");		break;
+				case BUTTON_CONFIRM:	ESP_LOGD(TAG, "Button context has polled a confirm button click event from the queue.");	break;
+				default:				ESP_LOGE(TAG, "Failed log a polled event of an invalid button type.");						break;
+			}
+		#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 		return event;
 	}
+
+	// Log the operation if button debug logging is enabled.
+	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
+		ESP_LOGD(TAG, "No event found in the button event queue of the button context.");
+	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 
 	// Otherwise, return BUTTON_NULL indicating no event.
 	return BUTTON_NULL;
@@ -78,13 +89,13 @@ esp_err_t slime_button_context_new(
 
 	// Log the progress if button debug logging is enabled.
 	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Extracting button context configuration.");
+		ESP_LOGD(TAG, "Caching all button configurations to stack.");
 	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 
-	// Extract the configuration of all buttons from the context configuration.
-	const slime_button_config_t* button_return_config	= &button_context_config->button_return_config;
-	const slime_button_config_t* button_switch_config	= &button_context_config->button_switch_config;
-	const slime_button_config_t* button_confirm_config	= &button_context_config->button_confirm_config;
+	// Cache the configuration of all buttons from the context configuration to stack.
+	const slime_button_config_t* return_button_config	= &button_context_config->return_button_config;
+	const slime_button_config_t* switch_button_config	= &button_context_config->switch_button_config;
+	const slime_button_config_t* confirm_button_config	= &button_context_config->confirm_button_config;
 
 	// Log the progress if button debug logging is enabled.
 	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
@@ -92,9 +103,9 @@ esp_err_t slime_button_context_new(
 	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 
 	// Create the button devices.
-	ESP_GOTO_ON_ERROR(iot_button_new_gpio_device(&button_return_config	->button_config, &button_return_config	->button_gpio_config, &context_button_return),	error, TAG, "Failed to create return button device.");
-	ESP_GOTO_ON_ERROR(iot_button_new_gpio_device(&button_switch_config	->button_config, &button_switch_config	->button_gpio_config, &context_button_switch),	error, TAG, "Failed to create switch button device.");
-	ESP_GOTO_ON_ERROR(iot_button_new_gpio_device(&button_confirm_config	->button_config, &button_confirm_config	->button_gpio_config, &context_button_confirm),	error, TAG, "Failed to create confirm button device.");
+	ESP_GOTO_ON_ERROR(iot_button_new_gpio_device(&return_button_config	->button_config, &return_button_config	->button_gpio_config, &context_button_return),	error, TAG, "Failed to create return button device.");
+	ESP_GOTO_ON_ERROR(iot_button_new_gpio_device(&switch_button_config	->button_config, &switch_button_config	->button_gpio_config, &context_button_switch),	error, TAG, "Failed to create switch button device.");
+	ESP_GOTO_ON_ERROR(iot_button_new_gpio_device(&confirm_button_config	->button_config, &confirm_button_config	->button_gpio_config, &context_button_confirm),	error, TAG, "Failed to create confirm button device.");
 
 	// Log the progress if button debug logging is enabled.
 	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
@@ -117,8 +128,8 @@ esp_err_t slime_button_context_new(
 	context_callback_contexts	= calloc(3, sizeof(slime_button_callback_context_t));
 
 	// Check the allocations.
-	ESP_GOTO_ON_FALSE(button_context != NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create button context struct.");
-	ESP_GOTO_ON_FALSE(button_context != NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create button callback contexts.");
+	ESP_GOTO_ON_FALSE(button_context			!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create button context struct.");
+	ESP_GOTO_ON_FALSE(context_callback_contexts	!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create button callback contexts.");
 
 	// Log the progress if button debug logging is enabled.
 	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
@@ -126,11 +137,11 @@ esp_err_t slime_button_context_new(
 	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 
 	// Fill the button context.
-	button_context->button_return				=			context_button_return;
-	button_context->button_switch				=			context_button_switch;
-	button_context->button_confirm				=			context_button_confirm;
-	button_context->button_event_queue			=			context_button_event_queue;
-	button_context->button_callback_contexts	= (void*)	context_callback_contexts;
+	button_context->return_button_handle	= context_button_return;
+	button_context->switch_button_handle	= context_button_switch;
+	button_context->confirm_button_handle	= context_button_confirm;
+	button_context->button_event_queue		= context_button_event_queue;
+	button_context->callback_contexts		= context_callback_contexts;
 
 	// Log the progress if button debug logging is enabled.
 	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
@@ -204,9 +215,9 @@ esp_err_t slime_button_context_del(slime_button_context_t* button_context_in) {
 	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 
 	// Unregister callbacks of all buttons.
-	ESP_RETURN_ON_ERROR(iot_button_unregister_cb(button_context_in->button_return,	BUTTON_SINGLE_CLICK, NULL), TAG, "Failed to unregister event callback for return button.");
-	ESP_RETURN_ON_ERROR(iot_button_unregister_cb(button_context_in->button_switch,	BUTTON_SINGLE_CLICK, NULL), TAG, "Failed to unregister event callback for switch button.");
-	ESP_RETURN_ON_ERROR(iot_button_unregister_cb(button_context_in->button_confirm,	BUTTON_SINGLE_CLICK, NULL), TAG, "Failed to unregister event callback for confirm button.");
+	ESP_RETURN_ON_ERROR(iot_button_unregister_cb(button_context_in->return_button_handle,	BUTTON_SINGLE_CLICK, NULL), TAG, "Failed to unregister event callback for return button.");
+	ESP_RETURN_ON_ERROR(iot_button_unregister_cb(button_context_in->switch_button_handle,	BUTTON_SINGLE_CLICK, NULL), TAG, "Failed to unregister event callback for switch button.");
+	ESP_RETURN_ON_ERROR(iot_button_unregister_cb(button_context_in->confirm_button_handle,	BUTTON_SINGLE_CLICK, NULL), TAG, "Failed to unregister event callback for confirm button.");
 
 	// Log the progress if button debug logging is enabled.
 	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
@@ -214,9 +225,9 @@ esp_err_t slime_button_context_del(slime_button_context_t* button_context_in) {
 	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 
 	// Delete all button device handless.
-	ESP_RETURN_ON_ERROR(iot_button_delete(button_context_in->button_return),	TAG, "Failed to delete return button handle.");
-	ESP_RETURN_ON_ERROR(iot_button_delete(button_context_in->button_switch),	TAG, "Failed to delete switch button handle.");
-	ESP_RETURN_ON_ERROR(iot_button_delete(button_context_in->button_confirm),	TAG, "Failed to delete confirm button handle.");
+	ESP_RETURN_ON_ERROR(iot_button_delete(button_context_in->return_button_handle),		TAG, "Failed to delete return button handle.");
+	ESP_RETURN_ON_ERROR(iot_button_delete(button_context_in->switch_button_handle),		TAG, "Failed to delete switch button handle.");
+	ESP_RETURN_ON_ERROR(iot_button_delete(button_context_in->confirm_button_handle),	TAG, "Failed to delete confirm button handle.");
 
 	// Log the progress if button debug logging is enabled.
 	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
@@ -231,8 +242,8 @@ esp_err_t slime_button_context_del(slime_button_context_t* button_context_in) {
 		ESP_LOGD(TAG, "Detaching all fields of callback contexts.");
 	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 
-	// Cast the opaque type pointer back to context pointer.
-	slime_button_callback_context_t* callback_contexts = (slime_button_callback_context_t*) button_context_in->button_callback_contexts;
+	// Fetch the callback contexts from the button context.
+	slime_button_callback_context_t* callback_contexts = button_context_in->callback_contexts;
 
 	// Detach the button context field in all callback contexts.
 	callback_contexts[0].button_context = NULL;
@@ -257,11 +268,11 @@ esp_err_t slime_button_context_del(slime_button_context_t* button_context_in) {
 		ESP_LOGD(TAG, "Detaching all fields of button context.");
 	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 
-	button_context_in->button_return			= NULL;
-	button_context_in->button_switch			= NULL;
-	button_context_in->button_confirm			= NULL;
+	button_context_in->return_button_handle		= NULL;
+	button_context_in->switch_button_handle		= NULL;
+	button_context_in->confirm_button_handle	= NULL;
 	button_context_in->button_event_queue		= NULL;
-	button_context_in->button_callback_contexts	= NULL;
+	button_context_in->callback_contexts		= NULL;
 
 	// Log the progress if button debug logging is enabled.
 	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
@@ -304,13 +315,23 @@ void slime_button_on_single_clicked(
 		// Log the discarded event if button debug logging is enabled.
 		#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 			switch (discarded_event) {
-				case BUTTON_RETURN:		ESP_LOGD(TAG, "Return button click event discarded.");					break;
-				case BUTTON_SWITCH:		ESP_LOGD(TAG, "Switch button click event discarded.");					break;
-				case BUTTON_CONFIRM:	ESP_LOGD(TAG, "Confirm button click event discarded.");					break;
-				default:				ESP_LOGE(TAG, "Invalid button type while discarding eldest event.");	break;
+				case BUTTON_RETURN:		ESP_LOGD(TAG, "Button context has discarded a return button click event.");		break;
+				case BUTTON_SWITCH:		ESP_LOGD(TAG, "Button context has discarded a switch button click event.");		break;
+				case BUTTON_CONFIRM:	ESP_LOGD(TAG, "Button context has discarded a confirm button click event.");	break;
+				default:				ESP_LOGE(TAG, "Failed log a discarded event of an invalid button type.");		break;
 			}
 		#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 	}
+
+	// Log the event if button debug logging is enabled.
+	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
+		switch (button_type) {
+			case BUTTON_RETURN:		ESP_LOGD(TAG, "Button context is enqueueing a new return button click event.");		break;
+			case BUTTON_SWITCH:		ESP_LOGD(TAG, "Button context is enqueueing a new switch button click event.");		break;
+			case BUTTON_CONFIRM:	ESP_LOGD(TAG, "Button context is enqueueing a new confirm button click event.");	break;
+			default:				ESP_LOGE(TAG, "Failed log a click event of an invalid button type.");				break;
+		}
+	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 
 	// Enqueue the new event.
 	ESP_RETURN_VOID_ON_FALSE(xQueueSend(
@@ -318,14 +339,4 @@ void slime_button_on_single_clicked(
 		/* pvItemToQueue	= */ &button_type,
 		/* xTicksToWait		= */ 0U
 	) == pdTRUE, TAG, "Failed to enqueue event to the button event queue.");
-
-	// Log the event if button debug logging is enabled.
-	#ifdef CONFIG_SLIME_BUTTON_DEBUG_LOGGING
-		switch (button_type) {
-			case BUTTON_RETURN:		ESP_LOGD(TAG, "New return button click event enqueued.");		break;
-			case BUTTON_SWITCH:		ESP_LOGD(TAG, "New switch button click event enqueued.");		break;
-			case BUTTON_CONFIRM:	ESP_LOGD(TAG, "New confirm button click event enqueued.");		break;
-			default:				ESP_LOGE(TAG, "Invalid button type while enqueueing event.");	break;
-		}
-	#endif // CONFIG_SLIME_BUTTON_DEBUG_LOGGING
 }

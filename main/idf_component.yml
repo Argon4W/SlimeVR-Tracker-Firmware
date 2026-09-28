@@ -5,8 +5,8 @@ dependencies:
   qmc6309-pid:
     git: https://github.com/Argon4W/qmc6309-pid.git
     version: '*'
-  magneto-pid:
-    git: https://github.com/Argon4W/magneto-pid.git
+  magneto-esp:
+    git: https://github.com/Argon4W/magneto-esp.git
     version: '*'
   ESP_FAST_LCD:
     git: https://github.com/Argon4W/ESP_FAST_LCD.git
