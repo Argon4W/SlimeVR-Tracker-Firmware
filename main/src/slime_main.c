@@ -116,18 +116,18 @@ typedef struct {
 
 void slime_main_on_gyroscope(
 	const	slime_sensor_context_t*	sensor_context,
-	const	float_t					gyroscope_dps_frd_x,
-	const	float_t					gyroscope_dps_frd_y,
-	const	float_t					gyroscope_dps_frd_z,
+	const	float_t					gyroscope_mdps_frd_x,
+	const	float_t					gyroscope_mdps_frd_y,
+	const	float_t					gyroscope_mdps_frd_z,
 			void*					user_context
 ) {
 	// Get the handles of vectors from the main context.
 	const slime_main_context_t* main_context = (slime_main_context_t*) user_context;
 
 	// Load the raw gyroscope output to the CEigen vector.
-	ceigen_set_matrix_coefficient(main_context->gyroscope, 0U, 0U, gyroscope_dps_frd_x);
-	ceigen_set_matrix_coefficient(main_context->gyroscope, 1U, 0U, gyroscope_dps_frd_y);
-	ceigen_set_matrix_coefficient(main_context->gyroscope, 2U, 0U, gyroscope_dps_frd_z);
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 0U, 0U, gyroscope_mdps_frd_x);
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 1U, 0U, gyroscope_mdps_frd_y);
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 2U, 0U, gyroscope_mdps_frd_z);
 
 	// Skip if calibrating.
 	if (!main_context->calibrating) {
@@ -171,8 +171,8 @@ void slime_main_on_magnetometer(
 	const	float_t					magnetometer_gauss_frd_z,
 			void*					user_context
 ) {
-	slime_main_context_t*		main_context	= (slime_main_context_t*) user_context;
-	slime_magneto_context_t*	magneto_context	= main_context->magneto_context;
+	slime_main_context_t*		main_context	= (slime_main_context_t*)	user_context;
+	slime_magneto_context_t*	magneto_context	=							main_context->magneto_context;
 
 	if (main_context->calibrating) {
 		if (magneto_context->sample_container->sample_norm_count < 45U * 50U) {

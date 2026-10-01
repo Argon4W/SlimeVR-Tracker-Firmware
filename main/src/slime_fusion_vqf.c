@@ -94,9 +94,9 @@ esp_err_t slime_vqf_fusion_update_gyroscope(
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
 		ESP_LOGD(TAG, "VQF fusion context \"%s\" is trying doing gyroscope update. (%.2f rad/s, %.2f rad/s, %.2f rad/s)",
 			/* s	*/ fusion_context->name,
-			/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_fusion, 0U, 0U),
-			/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_fusion, 1U, 0U),
-			/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_fusion, 2U, 0U)
+			/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_rad_enu, 0U, 0U),
+			/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_rad_enu, 1U, 0U),
+			/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_rad_enu, 2U, 0U)
 		);
 	#endif // CONFIG_SLIME_DEBUG_LOGGING
 
@@ -238,9 +238,9 @@ esp_err_t slime_vqf_fusion_get_state(
 			uint8_t*				rest_detected_out
 ) {
 	// We cannot proceed without a context and handles to receive the states.
-	ESP_RETURN_ON_FALSE(fusion_context != NULL, ESP_ERR_INVALID_ARG, TAG, "No fusion_context handle provided when performing getting states.");
-	ESP_RETURN_ON_FALSE(fusion_context != NULL, ESP_ERR_INVALID_ARG, TAG, "No uint8_t handle provided to receive magnetometer disturbance state when performing getting states.");
-	ESP_RETURN_ON_FALSE(fusion_context != NULL, ESP_ERR_INVALID_ARG, TAG, "No uint8_t handle provided to receive rest detection state when performing getting states.");
+	ESP_RETURN_ON_FALSE(fusion_context		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No fusion_context handle provided when performing getting states.");
+	ESP_RETURN_ON_FALSE(mag_disturbed_out	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No uint8_t handle provided to receive magnetometer disturbance state when performing getting states.");
+	ESP_RETURN_ON_FALSE(rest_detected_out	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No uint8_t handle provided to receive rest detection state when performing getting states.");
 
 	// Get the container VQF fusion context handle of the base fusion context handle.
 	const slime_vqf_fusion_context_t* vqf_fusion_context = __containerof(
@@ -312,7 +312,7 @@ esp_err_t slime_vqf_fusion_context_new(
 
 	// Log the progress if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Creating VQF fusion context \"%s\".", fusion_context_config);
+		ESP_LOGD(TAG, "Creating VQF fusion context \"%s\".", fusion_context_name);
 	#endif // CONFIG_SLIME_DEBUG_LOGGING
 
 	// Log the progress if debug logging is enabled.

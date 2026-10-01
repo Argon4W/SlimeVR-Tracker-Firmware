@@ -119,6 +119,7 @@ esp_err_t slime_fusion_update_magnetometer(
 	// Log the operation if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
 		ESP_LOGD(TAG, "Fusion context \"%s\" is trying doing magnetometer update. (%.2f gauss, %.2f gauss, %.2f gauss)",
+			/* s	*/ fusion_context->name,
 			/* .2f	*/ ceigen_get_matrix_coefficient(magnetometer_gauss_frd, 0U, 0U),
 			/* .2f	*/ ceigen_get_matrix_coefficient(magnetometer_gauss_frd, 1U, 0U),
 			/* .2f	*/ ceigen_get_matrix_coefficient(magnetometer_gauss_frd, 2U, 0U)
@@ -363,19 +364,6 @@ esp_err_t slime_fusion_context_new(
 
 	// Log the progress if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Creating fusion context of the fusion context type.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
-
-	// Create the fusion context of the fusion context type.
-	ESP_RETURN_ON_ERROR(fusion_context_type->fusion_context_new(
-		/* fusion_context_out		= */ fusion_context_out,
-		/* fusion_context_name		= */ fusion_context_type->name,
-		/* fusion_context_config	= */ fusion_context_type->config,
-		/* sensor_context			= */ sensor_context
-	), TAG, "Failed to create sensor context.");
-
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
 		ESP_LOGD(TAG, "Reserving handles of fusion context.");
 	#endif // CONFIG_SLIME_DEBUG_LOGGING
 
@@ -554,6 +542,19 @@ esp_err_t slime_fusion_context_new(
 
 	// Log the progress if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
+		ESP_LOGD(TAG, "Creating fusion context of the fusion context type.");
+	#endif // CONFIG_SLIME_DEBUG_LOGGING
+
+	// Create the fusion context of the fusion context type.
+	ESP_GOTO_ON_ERROR(fusion_context_type->fusion_context_new(
+		/* fusion_context_out		= */ fusion_context_out,
+		/* fusion_context_name		= */ fusion_context_type->name,
+		/* fusion_context_config	= */ fusion_context_type->config,
+		/* sensor_context			= */ sensor_context
+	), error, TAG, "Failed to create sensor context.");
+
+	// Log the progress if debug logging is enabled.
+	#ifdef CONFIG_SLIME_DEBUG_LOGGING
 		ESP_LOGD(TAG, "Releasing temporary scale matrices.");
 	#endif // CONFIG_SLIME_DEBUG_LOGGING
 
@@ -576,7 +577,11 @@ esp_err_t slime_fusion_context_new(
 	(*fusion_context_out)->ned_to_fusion_magnetometer_matrix	= context_ned_to_fusion_magnetometer_matrix;
 	(*fusion_context_out)->timestamp_ned_to_fusion_scale		= fusion_context_type->timestamp_ned_to_fusion_scale;
 
-	// The has-been-created message is logged in the impl function.
+	// Log the progress if debug logging is enabled.
+	#ifdef CONFIG_SLIME_DEBUG_LOGGING
+		ESP_LOGD(TAG, "Fusion context has been created.");
+	#endif // CONFIG_SLIME_DEBUG_LOGGING
+
 	return ret;
 
 	// Resource cleanup when error occurred.
