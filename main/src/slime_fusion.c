@@ -551,7 +551,7 @@ esp_err_t slime_fusion_context_new(
 		/* fusion_context_name		= */ fusion_context_type->name,
 		/* fusion_context_config	= */ fusion_context_type->config,
 		/* sensor_context			= */ sensor_context
-	), error, TAG, "Failed to create sensor context.");
+	), error, TAG, "Failed to create fusion context.");
 
 	// Log the progress if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
