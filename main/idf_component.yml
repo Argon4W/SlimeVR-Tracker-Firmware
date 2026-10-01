@@ -8,6 +8,9 @@ dependencies:
   magneto-esp:
     git: https://github.com/Argon4W/magneto-esp.git
     version: '*'
+  vqf-c-esp:
+    git: https://github.com/Argon4W/vqf-c-esp.git
+    version: '*'
   ESP_FAST_LCD:
     git: https://github.com/Argon4W/ESP_FAST_LCD.git
     version: '*'

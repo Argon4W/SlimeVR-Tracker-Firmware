@@ -9,22 +9,22 @@ static const char* TAG = "slime_magneto";
  * @brief The linear algebra context of the Magneto.
  */
 static const magneto_linear_algebra_context_t slime_magneto_linear_algebra_context = {
-	.new_matrix							= ceigen_new_matrix,
-	.delete_matrix						= ceigen_delete_matrix,
-	.get_matrix_coefficient				= ceigen_get_matrix_coefficient,
-	.set_matrix_coefficient				= ceigen_set_matrix_coefficient,
-	.add_matrix_coefficient				= ceigen_add_matrix_coefficient,
-	.multiply_matrix_coefficient		= ceigen_multiply_matrix_coefficient,
-	.copy_matrix						= ceigen_copy_matrix,
-	.copy_matrix_block					= ceigen_copy_matrix_block,
-	.multiply_matrix					= ceigen_multiply_matrix,
-	.subtract_matrix					= ceigen_subtract_matrix,
-	.invert_matrix_in_place				= ceigen_invert_matrix_in_place,
-	.transpose_matrix_in_place			= ceigen_transpose_matrix_in_place,
-	.normalize_matrix_in_place			= ceigen_normalize_matrix_in_place,
-	.set_matrix_zeros_in_place			= ceigen_set_matrix_zeros_in_place,
-	.multiply_matrix_scalar_in_place	= ceigen_multiply_matrix_scalar_in_place,
-	.solve_matrix_eigen					= ceigen_solve_matrix_eigen
+	.new_matrix						= ceigen_new_matrix,
+	.delete_matrix					= ceigen_delete_matrix,
+	.get_matrix_coefficient			= ceigen_get_matrix_coefficient,
+	.set_matrix_coefficient			= ceigen_set_matrix_coefficient,
+	.add_matrix_coefficient			= ceigen_add_matrix_coefficient,
+	.multiply_matrix_coefficient	= ceigen_multiply_matrix_coefficient,
+	.copy_matrix					= ceigen_copy_matrix,
+	.copy_matrix_block				= ceigen_copy_matrix_block,
+	.multiply_matrix				= ceigen_multiply_matrix,
+	.subtract_matrix				= ceigen_subtract_matrix,
+	.invert_matrix					= ceigen_invert_matrix,
+	.transpose_matrix				= ceigen_transpose_matrix,
+	.normalize_matrix				= ceigen_normalize_matrix,
+	.multiply_matrix_scalar			= ceigen_multiply_matrix_scalar,
+	.set_matrix_zeros				= ceigen_set_matrix_zeros,
+	.solve_matrix_eigen				= ceigen_solve_matrix_eigen
 };
 
 esp_err_t slime_magneto_calculate_calibration_coefficients(slime_magneto_context_t* magneto_context) {
@@ -393,7 +393,7 @@ esp_err_t slime_magneto_context_new(
 		ESP_LOGD(TAG, "Reserving handles of magneto context.");
 	#endif // CONFIG_SLIME_DEBUG_LOGGING
 
-	// Reserve handles for magneto context.
+	// Reserve handles of magneto context.
 	slime_magneto_context_t*	magneto_context				= NULL;
 	ceigen_matrix_handle_t		context_soft_iron_matrix	= NULL;
 	ceigen_matrix_handle_t		context_hard_iron_vector	= NULL;

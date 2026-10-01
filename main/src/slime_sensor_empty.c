@@ -45,6 +45,7 @@ slime_sensor_error_t slime_empty_sensor_context_new(
 	// Fill the empty sensor context.
 	sensor_context->name				= sensor_context_name;
 	sensor_context->register_callbacks	= NULL;
+	sensor_context->get_sample_time		= NULL;
 	sensor_context->poll_fifo			= NULL;
 	sensor_context->delete				= slime_empty_sensor_context_del;
 
@@ -82,6 +83,7 @@ esp_err_t slime_empty_sensor_context_del(slime_sensor_context_t* sensor_context_
 	// Detach all fields.
 	sensor_context_in->name					= NULL;
 	sensor_context_in->register_callbacks	= NULL;
+	sensor_context_in->get_sample_time		= NULL;
 	sensor_context_in->poll_fifo			= NULL;
 	sensor_context_in->delete				= NULL;
 

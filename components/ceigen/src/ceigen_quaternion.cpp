@@ -172,32 +172,35 @@ void ceigen_quaternion_to_rotation_matrix(
 	destination_matrix->impl = src_quaternion->impl.toRotationMatrix();
 }
 
-void ceigen_normalize_quaternion_in_place(
-	const ceigen_quaternion_handle_t source_quaternion
+void ceigen_normalize_quaternion(
+	const ceigen_quaternion_handle_t source_quaternion,
+	const ceigen_quaternion_handle_t destination_quaternion
 ) {
-	// Normalize the quaternion in place.
-	source_quaternion->impl.normalize();
+	// Normalize the quaternion and write the result to the destination quaternion.
+	destination_quaternion->impl = source_quaternion->impl.normalized();
 }
 
-void ceigen_conjugate_quaternion_in_place(
-	const ceigen_quaternion_handle_t source_quaternion
+void ceigen_conjugate_quaternion(
+	const ceigen_quaternion_handle_t source_quaternion,
+	const ceigen_quaternion_handle_t destination_quaternion
 ) {
-	// Conjugate the quaternion in place.
-	source_quaternion->impl = source_quaternion->impl.conjugate();
+	// Normalize the quaternion and write the result to the destination quaternion.
+	destination_quaternion->impl = source_quaternion->impl.conjugate();
 }
 
-void ceigen_inverse_quaternion_in_place(
-	const ceigen_quaternion_handle_t source_quaternion
+void ceigen_inverse_quaternion(
+	const ceigen_quaternion_handle_t source_quaternion,
+	const ceigen_quaternion_handle_t destination_quaternion
 ) {
-	// Invert the quaternion in place.
+	// Invert the quaternion and write the result to the destination quaternion.
 	source_quaternion->impl = source_quaternion->impl.inverse();
 }
 
-void ceigen_set_quaternion_identity_in_place(
-	const ceigen_quaternion_handle_t source_quaternion
+void ceigen_set_quaternion_identity(
+	const ceigen_quaternion_handle_t destination_quaternion
 ) {
-	// Set the quaternion to identity quaternion in place.
-	source_quaternion->impl.setIdentity();
+	// Set the destination quaternion to identity quaternion.
+	destination_quaternion->impl.setIdentity();
 }
 
 #ifdef __cplusplus

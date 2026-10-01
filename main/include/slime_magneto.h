@@ -2,6 +2,7 @@
 #define SLIME_MAGNETO_H
 
 #include "ceigen.h"
+#include "slime_nvs.h"
 
 /**
  * @brief Define the magneto matrix handle type to avoid casting void* before calling CEigen functions.
@@ -9,7 +10,6 @@
 #define MAGNETO_MATRIX_HANDLE_TYPE ceigen_matrix_handle_t
 
 #include "magneto.h"
-#include "slime_nvs.h"
 
 #ifdef __cplusplus
 extern "C" {

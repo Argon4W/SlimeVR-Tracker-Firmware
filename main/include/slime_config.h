@@ -9,6 +9,7 @@
 #include "slime_button.h"
 #include "slime_magneto.h"
 #include "slime_sensor.h"
+#include "slime_fusion.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,7 +53,12 @@ extern const slime_magneto_context_config_t slime_magneto_context_config;
 /**
  * @brief The table of the sensor context types by sensor board ID.
  */
-extern const slime_sensor_type_t slime_sensor_type_table[8];
+extern const slime_sensor_context_type_t slime_sensor_context_type_table[8];
+
+/**
+ * @brief The table of the fusion context types by fusion context type ID.
+ */
+extern const slime_fusion_context_type_t slime_fusion_context_type_table[1];
 
 #ifdef __cplusplus
 }

@@ -1,9 +1,13 @@
 #include "slime_config.h"
+
+#include <vqf.h>
+
 #include "lsm6dsv_reg.h"
 #include "qmc6309_reg.h"
 #include "esp_lcd_st7735.h"
 #include "slime_sensor_empty.h"
 #include "slime_sensor_lsm6dsv_qmc6309.h"
+#include "slime_fusion_vqf.h"
 
 /**
  * @brief The internal ST7735P3 96x54 vendor-specific initialization command sequence of the LCD context .
@@ -259,45 +263,63 @@ const slime_magneto_context_config_t slime_magneto_context_config = {
 	}
 };
 
-const slime_sensor_type_t slime_sensor_type_table[8] = {
-	{																/*!< The sensor type of sensor board ID 000 (Currently empty). */
-		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
-		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
-		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+const slime_sensor_context_type_t slime_sensor_context_type_table[8] = {
+	{															/*!< The sensor type of sensor board ID 000 (Currently empty). */
+		.sensor_context_new	= slime_empty_sensor_context_new,	/*!< The sensor context creation function handle of the empty sensor context. */
+		.config				= NULL,								/*!< No configuration for empty sensor context. */
+		.name				= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
 	},
-	{																			/*!< The sensor type of sensor board ID 001 (LSM6DSV+QMC6309). */
-		.sensor_context_new		= slime_lsm6dsv_qmc6309_sensor_context_new,		/*!< The sensor context creation function pointer of the LSM6DSV+QMC6309 sensor context. */
-		.sensor_context_config	= &slime_lsm6dsv_qmc6309_sensor_context_config,	/*!< Configuration of the LSM6DSV+QMC6309 sensor context. */
-		.sensor_context_name	= "lsm6dsv_qmc6309_sensor"						/*!< The name of the LSM6DSV+QMC6309 sensor. */
+	{																		/*!< The sensor type of sensor board ID 001 (LSM6DSV+QMC6309). */
+		.sensor_context_new	= slime_lsm6dsv_qmc6309_sensor_context_new,		/*!< The sensor context creation function handle of the LSM6DSV+QMC6309 sensor context. */
+		.config				= &slime_lsm6dsv_qmc6309_sensor_context_config,	/*!< Configuration of the LSM6DSV+QMC6309 sensor context. */
+		.name				= "lsm6dsv_qmc6309_sensor"						/*!< The name of the LSM6DSV+QMC6309 sensor. */
 	},
-	{																/*!< The sensor type of sensor board ID 010 (Currently empty). */
-		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
-		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
-		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	{															/*!< The sensor type of sensor board ID 010 (Currently empty). */
+		.sensor_context_new	= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.config				= NULL,								/*!< No configuration for empty sensor context. */
+		.name				= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
 	},
-	{																/*!< The sensor type of sensor board ID 011 (Currently empty). */
-		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
-		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
-		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	{															/*!< The sensor type of sensor board ID 011 (Currently empty). */
+		.sensor_context_new	= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.config				= NULL,								/*!< No configuration for empty sensor context. */
+		.name				= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
 	},
-	{																/*!< The sensor type of sensor board ID 100 (Currently empty). */
-		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
-		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
-		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	{															/*!< The sensor type of sensor board ID 100 (Currently empty). */
+		.sensor_context_new	= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.config				= NULL,								/*!< No configuration for empty sensor context. */
+		.name				= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
 	},
-	{																/*!< The sensor type of sensor board ID 101 (Currently empty). */
-		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
-		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
-		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	{															/*!< The sensor type of sensor board ID 101 (Currently empty). */
+		.sensor_context_new	= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.config				= NULL,								/*!< No configuration for empty sensor context. */
+		.name				= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
 	},
-	{																/*!< The sensor type of sensor board ID 110 (Currently empty). */
-		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
-		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
-		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	{															/*!< The sensor type of sensor board ID 110 (Currently empty). */
+		.sensor_context_new	= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.config				= NULL,								/*!< No configuration for empty sensor context. */
+		.name				= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
 	},
-	{																/*!< The sensor type of sensor board ID 111 (Currently empty). */
-		.sensor_context_new		= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
-		.sensor_context_config	= NULL,								/*!< No configuration for empty sensor context. */
-		.sensor_context_name	= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	{															/*!< The sensor type of sensor board ID 111 (Currently empty). */
+		.sensor_context_new	= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
+		.config				= NULL,								/*!< No configuration for empty sensor context. */
+		.name				= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
+	}
+};
+
+extern const slime_fusion_context_type_t slime_fusion_context_type_table[1] = {
+	{																	/*!< The fusion context type of VQF. */
+		.fusion_context_new = slime_vqf_fusion_context_new,				/*!< The fusion context creation function handle of VQF fusion context. */
+		.ned_to_fusion_quaternion = {									/*!< The coefficients of quaternion to convert vector in NED frame to ENU frame. */
+			0.0f,														/*!< W = 0.0f. */
+			M_SQRT1_2,													/*!< X = sqrt(2.0f) / 2.0f. */
+			M_SQRT1_2,													/*!< Y = sqrt(2.0f) / 2.0f. */
+			0.0f														/*!< Z = 0.0f. */
+		},
+		.gyroscope_ned_to_fusion_scale		= 0.00001745329251994330f,	/*!< Scale factor to scale mdps to rad/s. */
+		.accelerometer_ned_to_fusion_scale	= 0.00980665f,				/*!< Scale factor to scale mg to m/s^2. */
+		.magnetometer_ned_to_fusion_scale	= 1.0f,						/*!< VQF support magnetometer measurement in arbitrary units. */
+		.timestamp_ned_to_fusion_scale		= 0.0f,						/*!< VQF does not require timestamp. */
+		.name								= "VQF",					/*!< The name of the VQF fusion. */
+		.config								= &vqf_params_default		/*!< Use default VQF parameters. */
 	}
 };

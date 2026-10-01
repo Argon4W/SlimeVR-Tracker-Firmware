@@ -35,57 +35,57 @@ typedef struct slime_sensor_context slime_sensor_context_t;
 
 
 /**
- * @brief					Handle type of the function that will be invoked when the sensor receives new gyroscope data.
- * @param sensor_context	The sensor context that receives the gyroscope data.
- * @param gyroscope_mdps_x	The angular speed of the X axis in millidegree(s)-per-second of the received gyroscope data.
- * @param gyroscope_mdps_y	The angular speed of the Y axis in millidegree(s)-per-second of the received gyroscope data.
- * @param gyroscope_mdps_z	The angular speed of the Z axis in millidegree(s)-per-second of the received gyroscope data.
- * @param user_context		Custom used-defined handle.
+ * @brief						Handle type of the function that will be invoked when the sensor receives new gyroscope data.
+ * @param sensor_context		The sensor context that receives the gyroscope data.
+ * @param gyroscope_mdps_frd_x	The angular speed of the X axis in millidegree(s)-per-second in FRD body frame of the received gyroscope data.
+ * @param gyroscope_mdps_frd_y	The angular speed of the Y axis in millidegree(s)-per-second in FRD body frame of the received gyroscope data.
+ * @param gyroscope_mdps_frd_z	The angular speed of the Z axis in millidegree(s)-per-second in FRD body frame of the received gyroscope data.
+ * @param user_context			Custom used-defined handle.
  */
 typedef void (*slime_sensor_gyroscope_callback_t)(
 	const	slime_sensor_context_t*	sensor_context,
-			float_t					gyroscope_mdps_x,
-			float_t					gyroscope_mdps_y,
-			float_t					gyroscope_mdps_z,
+			float_t					gyroscope_mdps_frd_x,
+			float_t					gyroscope_mdps_frd_y,
+			float_t					gyroscope_mdps_frd_z,
 			void*					user_context
 );
 
 /**
- * @brief						Handle type of the function that will be invoked when the sensor receives new accelerometer data.
- * @param sensor_context		The sensor context that receives the accelerometer data.
- * @param accelerometer_mg_x	The gravity of the X axis in milli standard gravity (about 0.00980665 m/s^2) of the received accelerometer data.
- * @param accelerometer_mg_y	The gravity of the Y axis in milli standard gravity (about 0.00980665 m/s^2) of the received accelerometer data.
- * @param accelerometer_mg_z	The gravity of the Z axis in milli standard gravity (about 0.00980665 m/s^2) of the received accelerometer data.
- * @param user_context			Custom used-defined handle.
+ * @brief							Handle type of the function that will be invoked when the sensor receives new accelerometer data.
+ * @param sensor_context			The sensor context that receives the accelerometer data.
+ * @param accelerometer_mg_frd_x	The gravity of the X axis in milli standard gravity (about 0.00980665 m/s^2) in FRD body frame of the received accelerometer data.
+ * @param accelerometer_mg_frd_y	The gravity of the Y axis in milli standard gravity (about 0.00980665 m/s^2) in FRD body frame of the received accelerometer data.
+ * @param accelerometer_mg_frd_z	The gravity of the Z axis in milli standard gravity (about 0.00980665 m/s^2) in FRD body frame of the received accelerometer data.
+ * @param user_context				Custom used-defined handle.
  */
 typedef void (*slime_sensor_accelerometer_callback_t)(
 	const	slime_sensor_context_t*	sensor_context,
-			float_t					accelerometer_mg_x,
-			float_t					accelerometer_mg_y,
-			float_t					accelerometer_mg_z,
+			float_t					accelerometer_mg_frd_x,
+			float_t					accelerometer_mg_frd_y,
+			float_t					accelerometer_mg_frd_z,
 			void*					user_context
 );
 
 /**
- * @brief						Handle type of the function that will be invoked when the sensor receives new magnetometer data.
- * @param sensor_context		The sensor context that receives the magnetometer data.
- * @param magnetometer_gauss_x	The magnetic flux density of the X axis in gauss of the received magnetometer data.
- * @param magnetometer_gauss_y	The magnetic flux density of the Y axis in gauss of the received magnetometer data.
- * @param magnetometer_gauss_z	The magnetic flux density of the Z axis in gauss of the received magnetometer data.
- * @param user_context			Custom used-defined handle.
+ * @brief							Handle type of the function that will be invoked when the sensor receives new magnetometer data.
+ * @param sensor_context			The sensor context that receives the magnetometer data.
+ * @param magnetometer_gauss_frd_x	The magnetic flux density of the X axis in gauss in FRD body frame of the received magnetometer data.
+ * @param magnetometer_gauss_frd_y	The magnetic flux density of the Y axis in gauss in FRD body frame of the received magnetometer data.
+ * @param magnetometer_gauss_frd_z	The magnetic flux density of the Z axis in gauss in FRD body frame of the received magnetometer data.
+ * @param user_context				Custom used-defined handle.
  */
 typedef void (*slime_sensor_magnetometer_callback_t)(
 	const	slime_sensor_context_t*	sensor_context,
-			float_t					magnetometer_gauss_x,
-			float_t					magnetometer_gauss_y,
-			float_t					magnetometer_gauss_z,
+			float_t					magnetometer_gauss_frd_x,
+			float_t					magnetometer_gauss_frd_y,
+			float_t					magnetometer_gauss_frd_z,
 			void*					user_context
 );
 
 /**
  * @brief							Handle type of the function that will be invoked when the sensor receives new timestamp data.
  * @param sensor_context			The sensor context that receives the timestamp data.
- * @param delta_timestamp_seconds	The timestamp increment in seconds.
+ * @param delta_timestamp_seconds	The timestamp increment in seconds of the received timestamp data.
  * @param user_context				Custom used-defined handle.
  */
 typedef void (*slime_sensor_timestamp_callback_t) (
@@ -98,10 +98,25 @@ typedef void (*slime_sensor_timestamp_callback_t) (
  * @brief The callbacks configuration struct of the sensor context.
  */
 typedef struct {
-	slime_sensor_timestamp_callback_t		timestamp_callback;		/*!< The handle of the timestamp callback function. */
-	slime_sensor_gyroscope_callback_t		gyroscope_callback;		/*!< The handle of the gyroscope callback function. */
-	slime_sensor_accelerometer_callback_t	accelerometer_callback;	/*!< The handle of the accelerometer callback function. */
-	slime_sensor_magnetometer_callback_t	magnetometer_callback;	/*!< The handle of the magnetometer callback function. */
+	/**
+	 * @brief The handle of the timestamp callback function.
+	 */
+	slime_sensor_timestamp_callback_t timestamp_callback;
+
+	/**
+	 * @brief The handle of the gyroscope callback function.
+	 */
+	slime_sensor_gyroscope_callback_t gyroscope_callback;
+
+	/**
+	 * @brief The handle of the accelerometer callback function.
+	 */
+	slime_sensor_accelerometer_callback_t accelerometer_callback;
+
+	/**
+	 * @brief The handle of the magnetometer callback function.
+	 */
+	slime_sensor_magnetometer_callback_t magnetometer_callback;
 } slime_sensor_callbacks_config_t;
 
 /**
@@ -126,13 +141,13 @@ typedef struct {
 	/**
 	 * @brief The name of the type of sensor context.
 	 */
-	const char* sensor_context_name;
+	const char* name;
 
 	/**
 	 * @brief The configuration of the type of sensor context.
 	 */
-	const void* sensor_context_config;
-} slime_sensor_type_t;
+	const void* config;
+} slime_sensor_context_type_t;
 
 /**
  * @brief The definition of the sensor context struct.
@@ -146,9 +161,24 @@ struct slime_sensor_context {
 	 * @return					The status of registering callbacks.
 	 */
 	esp_err_t (*register_callbacks)(
-		const	slime_sensor_context_t*				sensor_context,
+				slime_sensor_context_t*				sensor_context,
 		const	slime_sensor_callbacks_config_t*	sensor_callbacks,
 				void*								user_context
+	);
+
+	/**
+	 * @brief								Function to getting sample times of the sensors.
+	 * @param sensor_context				The sensor context to get the sample times.
+	 * @param gyroscope_sample_time_ms		The handle to receive the gyroscope sample time in milliseconds.
+	 * @param accelerometer_sample_time_ms	The handle to receive the accelerometer sample time in milliseconds.
+	 * @param magnetometer_sample_time_ms	The handle to receive the magnetometer sample time in milliseconds.
+	 * @return								The status of getting sample times.
+	 */
+	esp_err_t (*get_sample_time)(
+		const	slime_sensor_context_t*	sensor_context,
+				float_t*				gyroscope_sample_time_ms,
+				float_t*				accelerometer_sample_time_ms,
+				float_t*				magnetometer_sample_time_ms
 	);
 
 	/**
@@ -179,9 +209,24 @@ struct slime_sensor_context {
  * @return					The status of registering callback.
  */
 esp_err_t slime_sensor_register_callbacks(
-	const	slime_sensor_context_t*				sensor_context,
+			slime_sensor_context_t*				sensor_context,
 	const	slime_sensor_callbacks_config_t*	sensor_callbacks,
 			void*								user_context
+);
+
+/**
+ * @brief								Get the sample times of the sensors.
+ * @param sensor_context				The sensor context to get the sample times.
+ * @param gyroscope_sample_time_ms		The handle to receive the gyroscope sample time in milliseconds.
+ * @param accelerometer_sample_time_ms	The handle to receive the accelerometer sample time in milliseconds.
+ * @param magnetometer_sample_time_ms	The handle to receive the magnetometer sample time in milliseconds.
+ * @return								The status of getting sample times.
+ */
+esp_err_t slime_sensor_get_sample_time(
+	const	slime_sensor_context_t*	sensor_context,
+			float_t*				gyroscope_sample_time_ms,
+			float_t*				accelerometer_sample_time_ms,
+			float_t*				magnetometer_sample_time_ms
 );
 
 /**
@@ -192,18 +237,18 @@ esp_err_t slime_sensor_register_callbacks(
 slime_sensor_error_t slime_sensor_poll_fifo(slime_sensor_context_t* sensor_context);
 
 /**
- * @brief						Create a new sensor context based on the sensor board ID read from the GPIO context.
- * @param sensor_context_out	The handle to receive the created sensor context.
- * @param sensor_type_table		The table of sensor types by sensor board ID.
- * @param gpio_context			The GPIO context to read the sensor board ID.
- * @param i2c_context			The I2C context of the sensor context.
- * @return						The status of the creation.
+ * @brief							Create a new sensor context based on the sensor board ID read from the GPIO context.
+ * @param sensor_context_out		The handle to receive the created sensor context.
+ * @param sensor_context_type_table	The table of sensor context types by sensor board ID.
+ * @param gpio_context				The GPIO context to read the sensor board ID.
+ * @param i2c_context				The I2C context of the sensor context.
+ * @return							The status of the creation.
  */
 slime_sensor_error_t slime_sensor_context_new(
-			slime_sensor_context_t**	sensor_context_out,
-	const	slime_sensor_type_t*		sensor_type_table,
-	const	slime_gpio_context_t*		gpio_context,
-	const	slime_i2c_context_t*		i2c_context
+			slime_sensor_context_t**		sensor_context_out,
+	const	slime_sensor_context_type_t*	sensor_context_type_table,
+	const	slime_gpio_context_t*			gpio_context,
+	const	slime_i2c_context_t*			i2c_context
 );
 
 /**

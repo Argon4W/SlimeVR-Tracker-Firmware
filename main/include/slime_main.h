@@ -9,13 +9,8 @@
 #include "slime_button.h"
 #include "slime_magneto.h"
 #include "slime_sensor.h"
+#include "slime_fusion.h"
 #include "slime_config.h"
-
-#define VQF_MATRIX_HANDLE_TYPE			ceigen_matrix_handle_t
-#define VQF_MATRIX_DOUBLE_HANDLE_TYPE	ceigen_matrix_double_handle_t
-#define VQF_QUATERNION_HANDLE_TYPE		ceigen_quaternion_handle_t
-
-#include "vqf.h"
 
 #ifdef __cplusplus
 extern "C" {

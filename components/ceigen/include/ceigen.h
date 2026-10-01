@@ -58,73 +58,188 @@ void ceigen_delete_matrix(
 );
 
 /**
- * @brief			Get the count of rows of the matrix.
- * @param matrix	the matrix to get the count of rows.
- * @return			count of rows of the matrix.
+ * @brief				Get the count of rows of an existing matrix.
+ * @param source_matrix	the source matrix to get the count of rows.
+ * @return				count of rows of the matrix.
  */
 uint32_t ceigen_get_matrix_rows(
-	ceigen_matrix_handle_t matrix
+	ceigen_matrix_handle_t source_matrix
 );
 
 /**
- * @brief			Get the count of columns of the matrix.
- * @param matrix	the matrix to get the count of columns.
- * @return			count of columns of the matrix.
+ * @brief				Get the count of columns of an existing matrix.
+ * @param source_matrix	the source matrix to get the count of columns.
+ * @return				count of columns of the matrix.
  */
 uint32_t ceigen_get_matrix_columns(
-	ceigen_matrix_handle_t matrix
+	ceigen_matrix_handle_t source_matrix
 );
 
 /**
- * @brief			Get the value of an element in an existing matrix.
- * @param matrix	the matrix of the element.
- * @param row		the row of the element.
- * @param column	the column of the element.
- * @retval			the value of the element get from the matrix.
+ * @brief				Get the value of the smallest coefficient of an existing matrix.
+ * @param source_matrix	the source matrix of to get the value of the smallest coefficient.
+ * @return				value of the smallest coefficient.
+ */
+float_t ceigen_get_matrix_min(
+	ceigen_matrix_handle_t source_matrix
+);
+
+/**
+ * @brief				Get the value of the largest coefficient of an existing matrix.
+ * @param source_matrix	the source matrix of to get the value of the largest coefficient.
+ * @return				value of the largest coefficient.
+ */
+float_t ceigen_get_matrix_max(
+	ceigen_matrix_handle_t source_matrix
+);
+
+/**
+ * @brief				Check if all coefficients of an existing matrix are 0.
+ * @param source_matrix	the source matrix to check.
+ * @return				true if all coefficients are 0.
+ */
+uint8_t ceigen_is_matrix_zeros(
+	ceigen_matrix_handle_t source_matrix
+);
+
+/**
+ * @brief				Compare and check if all coefficients of an existing matrix are greater than the given scalar.
+ * @param source_matrix	the source matrix to compare.
+ * @param value			the scalar to be compared to the matrix.
+ * @return				true if all coefficients are greater than the given scalar.
+ */
+uint8_t ceigen_is_matrix_all_greater_than(
+	ceigen_matrix_handle_t	source_matrix,
+	float_t					value
+);
+
+/**
+ * @brief				Compare and check if all coefficients of an existing matrix are greater than or equal to the given scalar.
+ * @param source_matrix	the source matrix to compare.
+ * @param value			the scalar to be compared to the matrix.
+ * @return				true if all coefficients are greater than or equal to the given scalar.
+ */
+uint8_t ceigen_is_matrix_all_greater_than_or_equal_to(
+	ceigen_matrix_handle_t	source_matrix,
+	float_t					value
+);
+
+/**
+ * @brief				Compare and check if all coefficients of an existing matrix are less than given scalar.
+ * @param source_matrix	the source matrix to compare.
+ * @param value			the scalar to be compared to the matrix.
+ * @return				true if all coefficients are less than the given scalar.
+ */
+uint8_t ceigen_is_matrix_all_less_than(
+	ceigen_matrix_handle_t	source_matrix,
+	float_t					value
+);
+
+/**
+ * @brief				Compare and check if all coefficients of an existing matrix are less than or equal to the given scalar.
+ * @param source_matrix	the source matrix to compare.
+ * @param value			the scalar to be compared to the matrix.
+ * @return				true if all coefficients are less than or equal to the given scalar.
+ */
+uint8_t ceigen_is_matrix_all_less_than_or_equal_to(
+	ceigen_matrix_handle_t	source_matrix,
+	float_t					value
+);
+
+/**
+ * @brief				Compare and check if any coefficient of an existing matrix is greater than the given scalar.
+ * @param source_matrix	the source matrix to compare.
+ * @param value			the scalar to be compared to the matrix.
+ * @return				true if any coefficient is greater than the given scalar.
+ */
+uint8_t ceigen_is_matrix_any_greater_than(
+	ceigen_matrix_handle_t	source_matrix,
+	float_t					value
+);
+
+/**
+ * @brief				Compare and check if any coefficient of an existing matrix is greater than or equal to the given scalar.
+ * @param source_matrix	the source matrix to compare.
+ * @param value			the scalar to be compared to the matrix.
+ * @return				true if any coefficient is greater than or equal to the given scalar.
+ */
+uint8_t ceigen_is_matrix_any_greater_than_or_equal_to(
+	ceigen_matrix_handle_t	source_matrix,
+	float_t					value
+);
+
+/**
+ * @brief				Compare and check if any coefficient of an existing matrix is less than given scalar.
+ * @param source_matrix	the source matrix to compare.
+ * @param value			the scalar to be compared to the matrix.
+ * @return				true if any coefficient is less than the given scalar.
+ */
+uint8_t ceigen_is_matrix_any_less_than(
+	ceigen_matrix_handle_t	source_matrix,
+	float_t					value
+);
+
+/**
+ * @brief				Compare and check if any coefficient of an existing matrix is less than or equal to the given scalar.
+ * @param source_matrix	the source matrix to compare.
+ * @param value			the scalar to be compared to the matrix.
+ * @return				true if any coefficient is less than or equal to the given scalar.
+ */
+uint8_t ceigen_is_matrix_any_less_than_or_equal_to(
+	ceigen_matrix_handle_t	source_matrix,
+	float_t					value
+);
+
+/**
+ * @brief				Get the value of an element in an existing matrix.
+ * @param source_matrix	the source matrix of the element.
+ * @param row			the row of the element.
+ * @param column		the column of the element.
+ * @retval				the value of the element get from the matrix.
  */
 float_t ceigen_get_matrix_coefficient(
-	ceigen_matrix_handle_t	matrix,
+	ceigen_matrix_handle_t	source_matrix,
 	uint32_t				row,
 	uint32_t				column
 );
 
 /**
- * @brief			Set the value of an element in an existing matrix.
- * @param matrix	the matrix of the element.
- * @param row		the row of the element.
- * @param column	the column of the element.
- * @param value		the value of the element.
+ * @brief						Set the value of an element in an existing matrix.
+ * @param destination_matrix	the destination matrix of the element.
+ * @param row					the row of the element.
+ * @param column				the column of the element.
+ * @param value					the value of the element.
  */
 void ceigen_set_matrix_coefficient(
-	ceigen_matrix_handle_t	matrix,
+	ceigen_matrix_handle_t	destination_matrix,
 	uint32_t				row,
 	uint32_t				column,
 	float_t					value
 );
 
 /**
- * @brief			Add a value to the existing value of an element in an existing matrix.
- * @param matrix	the matrix of the element.
- * @param row		the row of the element.
- * @param column	the column of the element.
- * @param value		the value to be added to the element.
+ * @brief						Add a value to the existing value of an element in an existing matrix.
+ * @param destination_matrix	the destination matrix of the element.
+ * @param row					the row of the element.
+ * @param column				the column of the element.
+ * @param value					the value to be added to the element.
  */
 void ceigen_add_matrix_coefficient(
-	ceigen_matrix_handle_t	matrix,
+	ceigen_matrix_handle_t	destination_matrix,
 	uint32_t				row,
 	uint32_t				column,
 	float_t					value
 );
 
 /**
- * @brief			Multiply a value to the existing value of an element in an existing matrix.
- * @param matrix	the matrix of the element.
- * @param row		the row of the element.
- * @param column	the column of the element.
- * @param value		the value to be multiplied to the element.
+ * @brief						Multiply a value to the existing value of an element in an existing matrix.
+ * @param destination_matrix	the destination matrix of the element.
+ * @param row					the row of the element.
+ * @param column				the column of the element.
+ * @param value					the value to be multiplied to the element.
  */
 void ceigen_multiply_matrix_coefficient(
-	ceigen_matrix_handle_t	matrix,
+	ceigen_matrix_handle_t	destination_matrix,
 	uint32_t				row,
 	uint32_t				column,
 	float_t					value
@@ -211,65 +326,97 @@ void ceigen_multiply_matrix(
 );
 
 /**
- * @brief				Invert an existing matrix in place.
- * @param source_matrix	the matrix to be inverted.
+ * @brief						Clip the coefficients of an existing matrix.
+ * @param min_value				The minimal allowed value of the coefficients.
+ * @param max_value				The maximum allowed value of the coefficients.
+ * @param source_matrix			The source matrix to be clipped.
+ * @param destination_matrix	destination matrix to hold the result matrix.
  */
-void ceigen_invert_matrix_in_place(
-	ceigen_matrix_handle_t source_matrix
-);
-
-/**
- * @brief				Transpose an existing matrix in place.
- * @param source_matrix	the matrix to be transposed.
- */
-void ceigen_transpose_matrix_in_place(
-	ceigen_matrix_handle_t source_matrix
-);
-
-/**
- * @brief				Normalize all column vectors of an existing matrix in place.
- * @param source_matrix	the matrix to be normalized.
- */
-void ceigen_normalize_matrix_in_place(
-	ceigen_matrix_handle_t source_matrix
-);
-
-/**
- * @brief				Multiply an existing matrix with a scalar in place.
- * @param source_matrix	the matrix to be multiplied with scalar.
- * @param value			the scalar to be multiplied to the matrix.
- */
-void ceigen_multiply_matrix_scalar_in_place(
+void ceigen_clip_matrix(
+	float_t					min_value,
+	float_t					max_value,
 	ceigen_matrix_handle_t	source_matrix,
-	float_t					value
+	ceigen_matrix_handle_t	destination_matrix
 );
 
 /**
- * @brief				Set values of all coefficients of an existing matrix to 0 in place.
- * @param source_matrix	the matrix to be set to zeros.
+ * @brief						Get the coefficient-wise absolute value of all coefficients of an existing matrix.
+ * @param source_matrix			the source matrix to get the absolute value.
+ * @param destination_matrix	destination matrix to hold the result matrix.
  */
-void ceigen_set_matrix_zeros_in_place(
-	ceigen_matrix_handle_t source_matrix
+void ceigen_abs_matrix(
+	ceigen_matrix_handle_t source_matrix,
+	ceigen_matrix_handle_t destination_matrix
 );
 
 /**
- * @brief				Set all coefficients of an existing matrix with given constant scalar in place.
- * @param source_matrix	the matrix to be set.
- * @param value			the scalar that all coefficients of the matrix will be set to.
+ * @brief						Invert an existing matrix.
+ * @param source_matrix			the source matrix to be inverted.
+ * @param destination_matrix	destination matrix to hold the result matrix.
  */
-void ceigen_set_matrix_constants_in_place(
+void ceigen_invert_matrix(
+	ceigen_matrix_handle_t source_matrix,
+	ceigen_matrix_handle_t destination_matrix
+);
+
+/**
+ * @brief						Transpose an existing matrix.
+ * @param source_matrix			the source matrix to be transposed.
+ * @param destination_matrix	destination matrix to hold the result matrix.
+ */
+void ceigen_transpose_matrix(
+	ceigen_matrix_handle_t source_matrix,
+	ceigen_matrix_handle_t destination_matrix
+);
+
+/**
+ * @brief						Normalize all column vectors of an existing matrix.
+ * @param source_matrix			the source matrix to be normalized.
+ * @param destination_matrix	destination matrix to hold the result matrix.
+ */
+void ceigen_normalize_matrix(
+	ceigen_matrix_handle_t source_matrix,
+	ceigen_matrix_handle_t destination_matrix
+);
+
+/**
+ * @brief						Multiply an existing matrix with a scalar.
+ * @param value					the scalar to be multiplied to the matrix.
+ * @param source_matrix			the source matrix to be multiplied with scalar.
+ * @param destination_matrix	destination matrix to hold the result matrix.
+ */
+void ceigen_multiply_matrix_scalar(
+	float_t					value,
 	ceigen_matrix_handle_t	source_matrix,
-	float_t					value
+	ceigen_matrix_handle_t	destination_matrix
 );
 
 /**
- * @brief				Set an existing matrix to scaled identity matrix in place.
- * @param source_matrix	the matrix to be set to scaled identity matrix.
- * @param scale			the scale of the matrix.
+ * @brief						Set values of all coefficients of an existing matrix to 0.
+ * @param destination_matrix	destination matrix to be set to zeros.
  */
-void ceigen_set_matrix_scaled_identity_in_place(
-	ceigen_matrix_handle_t	source_matrix,
-	float_t					scale
+void ceigen_set_matrix_zeros(
+	ceigen_matrix_handle_t destination_matrix
+);
+
+/**
+ * @brief						Set all coefficients of an existing matrix with given constant scalar.
+ * @param value					the scalar that all coefficients of the matrix will be set to.
+ * @param destination_matrix	destination matrix to be set to constants.
+ */
+void ceigen_set_matrix_constants(
+	float_t					value,
+	ceigen_matrix_handle_t	destination_matrix
+);
+
+/**
+ * @brief						Set an existing matrix to scaled identity matrix.
+ * @param scale					the scale of the matrix.
+ * @param destination_matrix	destination matrix to be set to scaled identity matrix.
+ */
+void ceigen_set_matrix_scaled_identity(
+	float_t					scale,
+	ceigen_matrix_handle_t	destination_matrix
 );
 
 /**
@@ -292,7 +439,7 @@ uint8_t ceigen_solve_matrix_eigen(
 
 /**
  * @brief				Treat an existing matrix as an n-dimensional vector then calculate the norm.
- * @param source_vector	The vector to calculate the norm.
+ * @param source_vector	The source vector to calculate the norm.
  * @retval				the norm.
  */
 float_t ceigen_get_vector_norm(
@@ -301,7 +448,7 @@ float_t ceigen_get_vector_norm(
 
 /**
  * @brief				Treat an existing matrix as an n-dimensional vector then calculate the squared norm.
- * @param source_vector	The vector to calculate the squared norm.
+ * @param source_vector	The source vector to calculate the squared norm.
  * @retval				the squared norm.
  */
 float_t ceigen_get_vector_squared_norm(
@@ -309,7 +456,19 @@ float_t ceigen_get_vector_squared_norm(
 );
 
 /**
- * @brief						Treat two existing matrices as 3-dimension column vectors, then calculate the cross product.
+ * @brief						Treat two existing matrices as n-dimensional column vectors, then calculate the dot product.
+ *								(destination_vector = dot(left_vector, right_vector))
+ * @param left_vector			the left vector of the dot product.
+ * @param right_vector			the right vector of the dot product
+ * @return						the dot product.
+ */
+float_t ceigen_vector_dot_product(
+	ceigen_matrix_handle_t left_vector,
+	ceigen_matrix_handle_t right_vector
+);
+
+/**
+ * @brief						Treat two existing matrices as 3-dimensional column vectors, then calculate the cross product.
  *								(destination_vector = cross(left_vector, right_vector))
  * @param left_vector			the left vector of the cross product.
  * @param right_vector			the right vector of the cross product.
@@ -322,15 +481,13 @@ void ceigen_vector_cross_product3(
 );
 
 /**
- * @brief				Treat an existing matrix as an n-dimensional vector then clip the coefficients of the vector in place.
- * @param source_vector	The vector to be clipped.
- * @param min_value		The minimal allowed value of the coefficients.
- * @param max_value		The maximum allowed value of the coefficients.
+ * @brief						Sum all column vectors of an existing matrix together.
+ * @param source_matrix			The source matrix to calculate the sum of all column vectors.
+ * @param destination_vector	destination vector to store the result vector.
  */
-void ceigen_clip_vector_in_place(
-	ceigen_matrix_handle_t	source_vector,
-	float_t					min_value,
-	float_t					max_value
+void ceigen_sum_matrix_column_vectors(
+	ceigen_matrix_handle_t source_matrix,
+	ceigen_matrix_handle_t destination_vector
 );
 
 /**
@@ -353,73 +510,188 @@ void ceigen_delete_matrix_double(
 );
 
 /**
- * @brief			Get the count of rows of the double precision matrix.
- * @param matrix	the double precision matrix to get the count of rows.
+ * @brief			Get the count of rows of an existing double precision matrix.
+ * @param source_matrix	the source double precision matrix to get the count of rows.
  * @return			count of rows of the double precision matrix.
  */
 uint32_t ceigen_get_matrix_double_rows(
-	ceigen_matrix_double_handle_t matrix
+	ceigen_matrix_double_handle_t source_matrix
 );
 
 /**
- * @brief			Get the count of columns of the double precision matrix.
- * @param matrix	the double precision matrix to get the count of columns.
- * @return			count of columns of the double precision matrix.
+ * @brief				Get the count of columns of an existing double precision matrix.
+ * @param source_matrix	the source double precision matrix to get the count of columns.
+ * @return				count of columns of the double precision matrix.
  */
 uint32_t ceigen_get_matrix_double_columns(
-	ceigen_matrix_double_handle_t matrix
+	ceigen_matrix_double_handle_t source_matrix
 );
 
 /**
- * @brief			Get the value of an element in an existing double precision matrix.
- * @param matrix	the double precision matrix of the element.
- * @param row		the row of the element.
- * @param column	the column of the element.
- * @retval			the value of the element get from the double precision matrix.
+ * @brief				Get the value of the smallest coefficient of an existing double precision matrix.
+ * @param source_matrix	the source double precision matrix of to get the value of the smallest coefficient.
+ * @return				value of the smallest coefficient.
+ */
+double_t ceigen_get_matrix_double_min(
+	ceigen_matrix_double_handle_t source_matrix
+);
+
+/**
+ * @brief				Get the value of the largest coefficient of an existing double precision matrix.
+ * @param source_matrix	the source double precision matrix of to get the value of the largest coefficient.
+ * @return				value of the largest coefficient.
+ */
+double_t ceigen_get_matrix_double_max(
+	ceigen_matrix_double_handle_t source_matrix
+);
+
+/**
+ * @brief				Check if all coefficients of an existing double precision matrix are 0.
+ * @param source_matrix	the source double precision matrix to check.
+ * @return				true if all coefficients are 0.
+ */
+uint8_t ceigen_is_matrix_double_zeros(
+	ceigen_matrix_double_handle_t source_matrix
+);
+
+/**
+ * @brief				Compare and check if all coefficients of an existing double precision matrix are greater than the given double precision scalar.
+ * @param source_matrix	the source double precision matrix to compare.
+ * @param value			the double precision scalar to be compared to the matrix.
+ * @return				true if all coefficients are greater than the given scalar.
+ */
+uint8_t ceigen_is_matrix_double_all_greater_than(
+	ceigen_matrix_double_handle_t	source_matrix,
+	double_t						value
+);
+
+/**
+ * @brief				Compare and check if all coefficients of an existing double precision matrix are greater than or equal to the given double precision scalar.
+ * @param source_matrix	the source double precision matrix to compare.
+ * @param value			the double precision scalar to be compared to the matrix.
+ * @return				true if all coefficients are greater than or equal to the given scalar.
+ */
+uint8_t ceigen_is_matrix_double_all_greater_than_or_equal_to(
+	ceigen_matrix_double_handle_t	source_matrix,
+	double_t						value
+);
+
+/**
+ * @brief				Compare and check if all coefficients of an existing double precision matrix are less than given double precision scalar.
+ * @param source_matrix	the source double precision matrix to compare.
+ * @param value			the double precision scalar to be compared to the matrix.
+ * @return				true if all coefficients are less than the given scalar.
+ */
+uint8_t ceigen_is_matrix_double_all_less_than(
+	ceigen_matrix_double_handle_t	source_matrix,
+	double_t						value
+);
+
+/**
+ * @brief				Compare and check if all coefficients of an existing double precision matrix are less than or equal to the given double precision scalar.
+ * @param source_matrix	the source double precision matrix to compare.
+ * @param value			the double precision scalar to be compared to the matrix.
+ * @return				true if all coefficients are less than or equal to the given scalar.
+ */
+uint8_t ceigen_is_matrix_double_all_less_than_or_equal_to(
+	ceigen_matrix_double_handle_t	source_matrix,
+	double_t						value
+);
+
+/**
+ * @brief				Compare and check if any coefficient of an existing double precision matrix is greater than the given double precision scalar.
+ * @param source_matrix	the source double precision matrix to compare.
+ * @param value			the double precision scalar to be compared to the matrix.
+ * @return				true if any coefficient is greater than the given scalar.
+ */
+uint8_t ceigen_is_matrix_double_any_greater_than(
+	ceigen_matrix_double_handle_t	source_matrix,
+	double_t						value
+);
+
+/**
+ * @brief				Compare and check if any coefficient of an existing matrix is greater than or equal to the given scalar.
+ * @param source_matrix	the source matrix to compare.
+ * @param value			the scalar to be compared to the matrix.
+ * @return				true if any coefficient is greater than or equal to the given scalar.
+ */
+uint8_t ceigen_is_matrix_double_any_greater_than_or_equal_to(
+	ceigen_matrix_double_handle_t	source_matrix,
+	double_t						value
+);
+
+/**
+ * @brief				Compare and check if any coefficient of an existing double precision matrix is less than given double precision scalar.
+ * @param source_matrix	the source double precision matrix to compare.
+ * @param value			the double precision scalar to be compared to the matrix.
+ * @return				true if any coefficient is less than the given scalar.
+ */
+uint8_t ceigen_is_matrix_double_any_less_than(
+	ceigen_matrix_double_handle_t	source_matrix,
+	double_t						value
+);
+
+/**
+ * @brief				Compare and check if any coefficient of an existing double precision matrix is less than or equal to the given double precision scalar.
+ * @param source_matrix	the source double precision matrix to compare.
+ * @param value			the double precision scalar to be compared to the matrix.
+ * @return				true if any coefficient is less than or equal to the given scalar.
+ */
+uint8_t ceigen_is_matrix_double_any_less_than_or_equal_to(
+	ceigen_matrix_double_handle_t	source_matrix,
+	double_t						value
+);
+
+/**
+ * @brief				Get the value of an element in an existing double precision matrix.
+ * @param source_matrix	the source double precision matrix of the element.
+ * @param row			the row of the element.
+ * @param column		the column of the element.
+ * @retval				the value of the element get from the double precision matrix.
  */
 double_t ceigen_get_matrix_double_coefficient(
-	ceigen_matrix_double_handle_t	matrix,
+	ceigen_matrix_double_handle_t	source_matrix,
 	uint32_t						row,
 	uint32_t						column
 );
 
 /**
- * @brief			Set the value of an element in an existing double precision matrix.
- * @param matrix	the double precision matrix of the element.
- * @param row		the row of the element.
- * @param column	the column of the element.
- * @param value		the value of the element.
+ * @brief						Set the value of an element in an existing double precision matrix.
+ * @param destination_matrix	the destination double precision matrix of the element.
+ * @param row					the row of the element.
+ * @param column				the column of the element.
+ * @param value					the value of the element.
  */
 void ceigen_set_matrix_double_coefficient(
-	ceigen_matrix_double_handle_t	matrix,
+	ceigen_matrix_double_handle_t	destination_matrix,
 	uint32_t						row,
 	uint32_t						column,
 	double_t						value
 );
 
 /**
- * @brief			Add a value to the existing value of an element in an existing double precision matrix.
- * @param matrix	the double precision matrix of the element.
- * @param row		the row of the element.
- * @param column	the column of the element.
- * @param value		the value to be added to the element.
+ * @brief						Add a value to the existing value of an element in an existing double precision matrix.
+ * @param destination_matrix	the destination double precision matrix of the element.
+ * @param row					the row of the element.
+ * @param column				the column of the element.
+ * @param value					the value to be added to the element.
  */
 void ceigen_add_matrix_double_coefficient(
-	ceigen_matrix_double_handle_t	matrix,
+	ceigen_matrix_double_handle_t	destination_matrix,
 	uint32_t						row,
 	uint32_t						column,
 	double_t						value
 );
 
 /**
- * @brief			Multiply a value to the existing value of an element in an existing double precision matrix.
- * @param matrix	the double precision matrix of the element.
- * @param row		the row of the element.
- * @param column	the column of the element.
- * @param value		the value to be multiplied to the element.
+ * @brief						Multiply a value to the existing value of an element in an existing double precision matrix.
+ * @param destination_matrix	the double precision matrix of the element.
+ * @param row					the row of the element.
+ * @param column				the column of the element.
+ * @param value					the value to be multiplied to the element.
  */
 void ceigen_multiply_matrix_double_coefficient(
-	ceigen_matrix_double_handle_t	matrix,
+	ceigen_matrix_double_handle_t	destination_matrix,
 	uint32_t						row,
 	uint32_t						column,
 	double_t						value
@@ -455,18 +727,6 @@ void ceigen_copy_matrix_double_block(
 	uint32_t						rows,
 	uint32_t						columns,
 	ceigen_matrix_double_handle_t	destination_matrix
-);
-
-/**
- * @brief						Multiply two existing double precision matrices. (destination_matrix = left_matrix * right_matrix)
- * @param left_matrix			the left double precision matrix of the multiplication.
- * @param right_matrix			the right double precision matrix of the multiplication.
- * @param destination_matrix	destination double precision matrix to hold the result matrix.
- */
-void ceigen_multiply_matrix_double(
-	ceigen_matrix_double_handle_t left_matrix,
-	ceigen_matrix_double_handle_t right_matrix,
-	ceigen_matrix_double_handle_t destination_matrix
 );
 
 /**
@@ -506,65 +766,109 @@ void ceigen_subtract_matrix_double(
 );
 
 /**
- * @brief				Invert an existing double precision matrix in place.
- * @param source_matrix	the double precision matrix to be inverted.
+ * @brief						Multiply two existing double precision matrices. (destination_matrix = left_matrix * right_matrix)
+ * @param left_matrix			the left double precision matrix of the multiplication.
+ * @param right_matrix			the right double precision matrix of the multiplication.
+ * @param destination_matrix	destination double precision matrix to hold the result matrix.
  */
-void ceigen_invert_matrix_double_in_place(
-	ceigen_matrix_double_handle_t source_matrix
+void ceigen_multiply_matrix_double(
+	ceigen_matrix_double_handle_t left_matrix,
+	ceigen_matrix_double_handle_t right_matrix,
+	ceigen_matrix_double_handle_t destination_matrix
 );
 
 /**
- * @brief				Transpose an existing double precision matrix in place.
- * @param source_matrix	the double precision matrix to be transposed.
+ * @brief						Clip the coefficients of an existing double precision matrix.
+ * @param min_value				The minimal allowed value of the coefficients.
+ * @param max_value				The maximum allowed value of the coefficients.
+ * @param source_matrix			The source double precision matrix to be clipped.
+ * @param destination_matrix	destination double precision matrix to hold the result matrix.
  */
-void ceigen_transpose_matrix_double_in_place(
-	ceigen_matrix_double_handle_t source_matrix
-);
-
-/**
- * @brief				Normalize all column vectors of an existing double precision matrix in place.
- * @param source_matrix	the double precision matrix to be normalized.
- */
-void ceigen_normalize_matrix_double_in_place(
-	ceigen_matrix_double_handle_t source_matrix
-);
-
-/**
- * @brief				Multiply an existing double precision matrix with a scalar in place.
- * @param source_matrix	the double precision matrix to be multiplied with scalar.
- * @param value			the double precision scalar to be multiplied to the matrix.
- */
-void ceigen_multiply_matrix_double_scalar_in_place(
+void ceigen_clip_matrix_double(
+	double_t						min_value,
+	double_t						max_value,
 	ceigen_matrix_double_handle_t	source_matrix,
-	double_t						value
+	ceigen_matrix_double_handle_t	destination_matrix
 );
 
 /**
- * @brief				Set values of all coefficients of an existing double precision matrix to 0 in place.
- * @param source_matrix	the double precision matrix to be set to zeros.
+ * @brief						Get the coefficient-wise absolute value of an existing double precision matrix.
+ * @param source_matrix			the source double precision matrix to get the absolute value.
+ * @param destination_matrix	destination double precision matrix to hold the result matrix.
  */
-void ceigen_set_matrix_double_zeros_in_place(
-	ceigen_matrix_double_handle_t source_matrix
+void ceigen_abs_matrix_double(
+	ceigen_matrix_double_handle_t source_matrix,
+	ceigen_matrix_double_handle_t destination_matrix
 );
 
 /**
- * @brief				Set all coefficients of an existing double precision matrix with given constant scalar in place.
- * @param source_matrix	the double precision matrix to be set.
- * @param value			the double precision scalar that all coefficients of the double precision matrix will be set to.
+ * @brief						Invert an existing double precision matrix.
+ * @param source_matrix			the source double precision matrix to be inverted.
+ * @param destination_matrix	destination double precision matrix to hold the result matrix.
  */
-void ceigen_set_matrix_double_constants_in_place(
+void ceigen_invert_matrix_double(
+	ceigen_matrix_double_handle_t source_matrix,
+	ceigen_matrix_double_handle_t destination_matrix
+);
+
+/**
+ * @brief						Transpose an existing double precision matrix.
+ * @param source_matrix			the source double precision matrix to be transposed.
+ * @param destination_matrix	destination double precision matrix to hold the result matrix.
+ */
+void ceigen_transpose_matrix_double(
+	ceigen_matrix_double_handle_t source_matrix,
+	ceigen_matrix_double_handle_t destination_matrix
+);
+
+/**
+ * @brief						Normalize all column vectors of an existing double precision matrix.
+ * @param source_matrix			the source double precision matrix to be normalized.
+ * @param destination_matrix	destination double precision matrix to hold the result matrix.
+ */
+void ceigen_normalize_matrix_double(
+	ceigen_matrix_double_handle_t source_matrix,
+	ceigen_matrix_double_handle_t destination_matrix
+);
+
+/**
+ * @brief						Multiply an existing double precision matrix with a scalar.
+ * @param value					the double precision scalar to be multiplied to the matrix.
+ * @param source_matrix			the source double precision matrix to be multiplied with scalar.
+ * @param destination_matrix	destination double precision matrix to hold the result matrix.
+ */
+void ceigen_multiply_matrix_double_scalar(
+	double_t						value,
 	ceigen_matrix_double_handle_t	source_matrix,
-	double_t						value
+	ceigen_matrix_double_handle_t	destination_matrix
 );
 
 /**
- * @brief				Set an existing double precision matrix to scaled identity matrix in place.
- * @param source_matrix	the double precision matrix to be set to scaled identity matrix.
- * @param scale			the scale of the double precision matrix.
+ * @brief						Set values of all coefficients of an existing double precision matrix to 0.
+ * @param destination_matrix	destination double precision matrix to be set to zeros.
  */
-void ceigen_set_matrix_double_scaled_identity_in_place(
-	ceigen_matrix_double_handle_t	source_matrix,
-	double_t						scale
+void ceigen_set_matrix_double_zeros(
+	ceigen_matrix_double_handle_t destination_matrix
+);
+
+/**
+ * @brief						Set all coefficients of an existing double precision matrix with given constant scalar.
+ * @param value					the double precision scalar that all coefficients of the double precision matrix will be set to.
+ * @param destination_matrix	destination double precision matrix to be set to constants.
+ */
+void ceigen_set_matrix_double_constants(
+	double_t						value,
+	ceigen_matrix_double_handle_t	destination_matrix
+);
+
+/**
+ * @brief						Set an existing double precision matrix to scaled identity matrix.
+ * @param scale					the scale of the double precision matrix.
+ * @param destination_matrix	destination double precision matrix to be set to scaled identity matrix.
+ */
+void ceigen_set_matrix_double_scaled_identity(
+	double_t						scale,
+	ceigen_matrix_double_handle_t	destination_matrix
 );
 
 /**
@@ -587,7 +891,7 @@ uint8_t ceigen_solve_matrix_double_eigen(
 
 /**
  * @brief				Treat an existing double precision matrix as an n-dimensional double precision vector then calculate the norm.
- * @param source_vector	The double precision vector to calculate the norm.
+ * @param source_vector	The source double precision vector to calculate the norm.
  * @retval				the norm.
  */
 double_t ceigen_get_vector_double_norm(
@@ -596,7 +900,7 @@ double_t ceigen_get_vector_double_norm(
 
 /**
  * @brief				Treat an existing double precision matrix as an n-dimensional double precision vector then calculate the squared norm.
- * @param source_vector	The double precision vector to calculate the squared norm.
+ * @param source_vector	The source double precision vector to calculate the squared norm.
  * @retval				the squared norm.
  */
 double_t ceigen_get_vector_double_squared_norm(
@@ -604,7 +908,19 @@ double_t ceigen_get_vector_double_squared_norm(
 );
 
 /**
- * @brief						Treat two existing double precision matrices as 3-dimension double precision column vectors, then calculate the cross product.
+ * @brief						Treat two existing double precision matrices as n-dimensional column vectors, then calculate the dot product.
+ *								(destination_vector = dot(left_vector, right_vector))
+ * @param left_vector			the left double precision vector of the dot product.
+ * @param right_vector			the right double precision vector of the dot product
+ * @return						the dot product.
+ */
+float_t ceigen_vector_double_dot_product(
+	ceigen_matrix_double_handle_t left_vector,
+	ceigen_matrix_double_handle_t right_vector
+);
+
+/**
+ * @brief						Treat two existing double precision matrices as 3-dimensional double precision column vectors, then calculate the cross product.
  *								(destination_vector = cross(left_vector, right_vector))
  * @param left_vector			the left double precision vector of the cross product.
  * @param right_vector			the right double precision vector of the cross product.
@@ -617,15 +933,13 @@ void ceigen_vector_double_cross_product3(
 );
 
 /**
- * @brief				Treat an existing double precision matrix as an n-dimensional double precision vector then clip the coefficients of the vector in place.
- * @param source_vector	The double precision vector to be clipped.
- * @param min_value		The minimal allowed value of the coefficients.
- * @param max_value		The maximum allowed value of the coefficients.
+ * @brief						Sum all column vectors of an existing matrix together.
+ * @param source_matrix			The source matrix to calculate the sum of all column vectors.
+ * @param destination_vector	destination vector to store the result vector.
  */
-void ceigen_clip_vector_double_in_place(
-	ceigen_matrix_double_handle_t	source_vector,
-	double_t						min_value,
-	double_t						max_value
+void ceigen_sum_matrix_double_column_vectors(
+	ceigen_matrix_double_handle_t source_matrix,
+	ceigen_matrix_double_handle_t destination_vector
 );
 
 /**
@@ -832,7 +1146,7 @@ void ceigen_set_quaternion_rotation(
 );
 
 /**
- * @brief						Treat an existing matrix as a 3-dimension vector then rotate the vector with a given quaternion. (destination_vector = quaternion * src_vector * (quaternion^{-1}))
+ * @brief						Treat an existing matrix as a 3-dimensional vector then rotate the vector with a given quaternion. (destination_vector = quaternion * src_vector * (quaternion^{-1}))
  * @param src_vector			the source vector to be rotated.
  * @param quaternion			the quaternion to rotate the vector.
  * @param destination_vector	destination vector to hold the result vector.
@@ -854,35 +1168,41 @@ void ceigen_quaternion_to_rotation_matrix(
 );
 
 /**
- * @brief					Normalize an existing quaternion in place.
- * @param source_quaternion	the quaternion to be normalized.
+ * @brief							Normalize an existing quaternion.
+ * @param source_quaternion			the source quaternion to be normalized.
+ * @param destination_quaternion	destination quaternion to hold the result quaternion.
  */
-void ceigen_normalize_quaternion_in_place(
-	ceigen_quaternion_handle_t source_quaternion
+void ceigen_normalize_quaternion(
+	ceigen_quaternion_handle_t source_quaternion,
+	ceigen_quaternion_handle_t destination_quaternion
 );
 
 /**
- * @brief					Conjugate an existing quaternion in place.
- * @param source_quaternion	the quaternion to be conjugated.
+ * @brief							Conjugate an existing quaternion.
+ * @param source_quaternion			the source quaternion to be conjugated.
+ * @param destination_quaternion	destination quaternion to hold the result quaternion.
  */
-void ceigen_conjugate_quaternion_in_place(
-	ceigen_quaternion_handle_t source_quaternion
+void ceigen_conjugate_quaternion(
+	ceigen_quaternion_handle_t source_quaternion,
+	ceigen_quaternion_handle_t destination_quaternion
 );
 
 /**
- * @brief					Invert an existing quaternion in place.
- * @param source_quaternion	the quaternion to be inverted.
+ * @brief							Invert an existing quaternion.
+ * @param source_quaternion			the source quaternion to be inverted.
+ * @param destination_quaternion	destination quaternion to hold the result quaternion.
  */
-void ceigen_inverse_quaternion_in_place(
-	ceigen_quaternion_handle_t source_quaternion
+void ceigen_inverse_quaternion(
+	ceigen_quaternion_handle_t source_quaternion,
+	ceigen_quaternion_handle_t destination_quaternion
 );
 
 /**
- * @brief					Set an existing quaternion to identity quaternion in place.
- * @param source_quaternion	the quaternion to be set to identity quaternion.
+ * @brief							Set an existing quaternion to identity quaternion.
+ * @param destination_quaternion	destination quaternion to be set to identity quaternion.
  */
-void ceigen_set_quaternion_identity_in_place(
-	ceigen_quaternion_handle_t  source_quaternion
+void ceigen_set_quaternion_identity(
+	ceigen_quaternion_handle_t destination_quaternion
 );
 
 #ifdef __cplusplus

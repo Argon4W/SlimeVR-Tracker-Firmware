@@ -43,7 +43,7 @@
 #define SENSOR_PACK_UINT32(b24, b16, b08, b00) ((uint32_t) ((((uint32_t) (b24)) << 24U) | (((uint32_t) (b16)) << 16U) | (((uint32_t) (b08)) << 8U) | (b00)))
 
 /**
- * @brief The log tag of the Slime LSM6DSV+QMC6309 Sensor.
+ * @brief The log tag of the Slime LSM6DSV+QMC6309 sensor context.
  */
 static const char* TAG = "slime_sensor_lsm6dsv_qmc6309";
 
@@ -67,10 +67,13 @@ typedef struct {
 	const	slime_lsm6dsv_qmc6309_sensor_context_config_t*		config;									/*!< The configuration of the sensor context. */
 			stmdev_ctx_t										lsm6dsv_context;						/*!< The LSM6DSV device context of the sensor context. */
 			qmc_context_t										qmc6309_context;						/*!< The QMC6309 device context of the sensor context. */
-			float_t												lsm6dsv_gyroscope_sensitivity;			/*!< The gyroscope sensitivity of the LSM6DSV of the sensor context.*/
-			float_t												lsm6dsv_accelerometer_sensitivity;		/*!< The accelerometer sensitivity of the LSM6DSV of the sensor context.*/
-			float_t												lsm6dsv_timestamp_sensitivity;			/*!< The timestamp sensitivity of the LSM6DSV of the sensor context.*/
-			float_t												qmc6309_magnetometer_sensitivity;		/*!< The magnetometer sensitivity of the QMC6309 of the sensor context.*/
+			float_t												lsm6dsv_timestamp_sensitivity;			/*!< The timestamp sensitivity of the LSM6DSV of the sensor context. */
+			float_t												lsm6dsv_gyroscope_sensitivity;			/*!< The gyroscope sensitivity of the LSM6DSV of the sensor context. */
+			float_t												lsm6dsv_accelerometer_sensitivity;		/*!< The accelerometer sensitivity of the LSM6DSV of the sensor context. */
+			float_t												qmc6309_magnetometer_sensitivity;		/*!< The magnetometer sensitivity of the QMC6309 of the sensor context. */
+			float_t												lsm6dsv_gyroscope_sample_time;			/*!< The sample time of the gyroscope of LSM6DSV in milliseconds of the sensor context. */
+			float_t												lsm6dsv_accelerometer_sample_time;		/*!< The sample time of the accelerometer of LSM6DSV in milliseconds of the sensor context. */
+			float_t												qmc6309_magnetometer_sample_time;		/*!< The sample time of the magnetometer of QMC6309 in milliseconds of the sensor context. */
 			slime_lsm6dsv_qmc6309_sensor_fifo_data_buffer_t*	fifo_data_buffer;						/*!< The FIFO data buffer for holding data of incoming FIFO words of same FIFO count in order to reorder them into fixed callback order when flushing. */
 			uint8_t*											fifo_word_buffer;						/*!< The FIFO word buffer for fast batched FIFO word polling in order to avoid I2C transition costs. */
 			uint32_t											fifo_timestamp_last_value;				/*!< The value of last recorded timestamp from FIFO in LSBs. */
@@ -107,7 +110,7 @@ static lsm6dsv_sh_cfg_read_t sensor_hub_slave_1_read_config = {
  * @brief				Delay in milliseconds.
  * @param milliseconds	The time to delay in milliseconds.
  */
-static void delay_milliseconds(uint32_t milliseconds) {
+static void delay_milliseconds(const uint32_t milliseconds) {
 	vTaskDelay(pdMS_TO_TICKS(milliseconds));
 }
 
@@ -119,13 +122,13 @@ static void delay_milliseconds(uint32_t milliseconds) {
  * @return					The status of registering callback.
  */
 static esp_err_t slime_lsm6dsv_qmc6309_sensor_register_callbacks(
-	const	slime_sensor_context_t*				sensor_context,
+			slime_sensor_context_t*				sensor_context,
 	const	slime_sensor_callbacks_config_t*	sensor_callbacks,
 			void*								user_context
 ) {
 	// We cannot proceed without a context and a callback configuration.
-	ESP_RETURN_ON_FALSE(sensor_context		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_sensor_context_t handle provided when performing registering gyroscope callback.");
-	ESP_RETURN_ON_FALSE(sensor_callbacks	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_sensor_callbacks_config_t handle provided when performing registering gyroscope callback.");
+	ESP_RETURN_ON_FALSE(sensor_context		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_sensor_context_t handle provided when performing registering callbacks.");
+	ESP_RETURN_ON_FALSE(sensor_callbacks	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_sensor_callbacks_config_t handle provided when performing registering callbacks.");
 
 	// Get the container LSM6DSV+QMC6309 sensor context handle of the base sensor context handle.
 	slime_lsm6dsv_qmc6309_sensor_context_t* lsm6dsv_qmc6309_sensor_context = __containerof(
@@ -154,6 +157,38 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_register_callbacks(
 	return ESP_OK;
 }
 
+esp_err_t slime_lsm6dsv_qmc6309_sensor_get_sample_time(
+	const	slime_sensor_context_t*	sensor_context,
+			float_t*				gyroscope_sample_time_ms,
+			float_t*				accelerometer_sample_time_ms,
+			float_t*				magnetometer_sample_time_ms
+) {
+	// We cannot proceed without a context and handles to receive the sample times.
+	ESP_RETURN_ON_FALSE(sensor_context					!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_sensor_context_t handle provided when performing getting sample times.");
+	ESP_RETURN_ON_FALSE(gyroscope_sample_time_ms		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No handle provided to received the gyroscope sample time when performing getting sample times.");
+	ESP_RETURN_ON_FALSE(accelerometer_sample_time_ms	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No handle provided to received the accelerometer sample time when performing getting sample times.");
+	ESP_RETURN_ON_FALSE(magnetometer_sample_time_ms		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No handle provided to received the magnetometer sample time when performing getting sample times.");
+
+	// Get the container LSM6DSV+QMC6309 sensor context handle of the base sensor context handle.
+	const slime_lsm6dsv_qmc6309_sensor_context_t* lsm6dsv_qmc6309_sensor_context = __containerof(
+		/* value		= */ sensor_context,
+		/* container	= */ slime_lsm6dsv_qmc6309_sensor_context_t,
+		/* field_offset	= */ base
+	);
+
+	// Log the operation if debug logging is enabled.
+	#ifdef CONFIG_SLIME_DEBUG_LOGGING
+		ESP_LOGD(TAG, "LSM6DSV+QMC6309 sensor context \"%s\" is getting sample times.", sensor_context->name);
+	#endif
+
+	// Get and return the sample times.
+	*gyroscope_sample_time_ms		= lsm6dsv_qmc6309_sensor_context->lsm6dsv_gyroscope_sample_time;
+	*accelerometer_sample_time_ms	= lsm6dsv_qmc6309_sensor_context->lsm6dsv_accelerometer_sample_time;
+	*magnetometer_sample_time_ms	= lsm6dsv_qmc6309_sensor_context->qmc6309_magnetometer_sample_time;
+
+	return ESP_OK;
+}
+
 /**
  * @brief					Poll sensor FIFO data.
  * @param sensor_context	The LSM6DSV+QMC6309 sensor context to poll the FIFO data.
@@ -162,8 +197,8 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_register_callbacks(
 static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_context_t* sensor_context) {
 	esp_err_t ret = ESP_OK;
 
-	// We cannot proceed without a context and a callback function handle.
-	ESP_GOTO_ON_FALSE(sensor_context != NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_t handle provided when performing registering timestamp callback.");
+	// We cannot proceed without a context.
+	ESP_GOTO_ON_FALSE(sensor_context != NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_t handle provided when performing polling FIFO data.");
 
 	// Log the operation if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
@@ -607,6 +642,13 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 }
 
 /**
+ * @brief		Get the value of the ODR from the ODR enum.
+ * @param odr	the ODR enum to get the value of the ODR.
+ * @return		the ODR value.
+ */
+static float_t slime_lsm6dsv_qmc6309_sensor_get_odr(lsm6dsv_data_rate_t odr);
+
+/**
  * @brief					Release the sensor context.
  * @param sensor_context_in The LSM6DSV+QMC6309 sensor context to be released.
  * @return					The status of the releasing.
@@ -623,7 +665,7 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 
 	// Log the progress if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Reserving handles of the LSM6DSV+QMC6309 sensor context.");
+		ESP_LOGD(TAG, "Reserving handles of LSM6DSV+QMC6309 sensor context.");
 	#endif // CONFIG_SLIME_DEBUG_LOGGING
 
 	// Reserve the handle of the LSM6DSV+QMC6309 sensor context and the FIFO word buffer of the context.
@@ -632,7 +674,7 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	uint8_t*											context_fifo_word_buffer		= NULL;
 
 	// We cannot proceed without a name, a configuration, an I2C context of the devices, and a handle to receive the created empty sensor context.
-	ESP_GOTO_ON_FALSE(sensor_context_out	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No sensor_context_out handle provided when creating LSM6DSV+QMC6309 sensor context.");
+	ESP_GOTO_ON_FALSE(sensor_context_out	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_t handle provided when creating LSM6DSV+QMC6309 sensor context.");
 	ESP_GOTO_ON_FALSE(sensor_context_name	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No name provided when creating LSM6DSV+QMC6309 sensor context.");
 	ESP_GOTO_ON_FALSE(sensor_context_config	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No configuration handle provided when creating LSM6DSV+QMC6309 sensor context.");
 	ESP_GOTO_ON_FALSE(i2c_context			!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_i2c_context_t handle provided when creating LSM6DSV+QMC6309 sensor context.");
@@ -888,22 +930,52 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 
 	// Log the progress if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Getting timestamp rate difference of LSM6DSV.");
+		ESP_LOGD(TAG, "Calibrating timestamp and output data rate of LSM6DSV.");
 	#endif // CONFIG_SLIME_DEBUG_LOGGING
 
-	// Reserve space for internal frequency of the LSM6DSV.
-	int8_t timestamp_rate_difference = 0;
+	// Reserve space for internal frequency difference of the LSM6DSV.
+	int8_t internal_frequency_difference = 0;
 
 	// Get internal frequency of the LSM6DSV.
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_odr_cal_reg_get(lsm6dsv_context, &timestamp_rate_difference), error_imu, TAG, "Failed to get timestamp rate difference of LSM6DSV.");
+	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_odr_cal_reg_get(lsm6dsv_context, &internal_frequency_difference), error_imu, TAG, "Failed to get internal frequency difference of LSM6DSV.");
+
+	// Calculate the scale factor.
+	const float_t scale_factor = (1.0f + 0.0013f * internal_frequency_difference);
 
 	// Log the progress if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Calculating timestamp sensitivity.");
+		ESP_LOGD(TAG, "Calibrating timestamp sensitivity.");
 	#endif // CONFIG_SLIME_DEBUG_LOGGING
 
 	// Calculate and save the timestamp sensitivity in seconds.
-	lsm6dsv_qmc6309_sensor_context->lsm6dsv_timestamp_sensitivity = 1.0f / (46080.0f * (1.0f + 0.0013f * timestamp_rate_difference));
+	lsm6dsv_qmc6309_sensor_context->lsm6dsv_timestamp_sensitivity = 1.0f / (46080.0f * scale_factor);
+
+	// Log the progress if debug logging is enabled.
+	#ifdef CONFIG_SLIME_DEBUG_LOGGING
+		ESP_LOGD(TAG, "Calibrating sensor sensitivity.");
+	#endif // CONFIG_SLIME_DEBUG_LOGGING
+
+	float_t qmc6309_data_rate = 0.0f;
+
+	switch (qmc6309_setup.odr) {
+		case ODR_1HZ:	qmc6309_data_rate = 1.0f;	break;
+		case ODR_10HZ:	qmc6309_data_rate = 10.0f;	break;
+		case ODR_50HZ:	qmc6309_data_rate = 50.0f;	break;
+		case ODR_100HZ:	qmc6309_data_rate = 100.0f;	break;
+		case ODR_200HZ:	qmc6309_data_rate = 200.0f;	break;
+	}
+
+	// Calculate and store the calibrated sample times.
+	lsm6dsv_qmc6309_sensor_context->lsm6dsv_gyroscope_sample_time		= 1000.0f / (slime_lsm6dsv_qmc6309_sensor_get_odr(lsm6dsv_gyroscope_data_rate)		* scale_factor);
+	lsm6dsv_qmc6309_sensor_context->lsm6dsv_accelerometer_sample_time	= 1000.0f / (slime_lsm6dsv_qmc6309_sensor_get_odr(lsm6dsv_accelerometer_data_rate)	* scale_factor);
+	lsm6dsv_qmc6309_sensor_context->qmc6309_magnetometer_sample_time	= 1000.0f / qmc6309_data_rate;
+
+	// Log the calibrated sample times if debug logging is enabled.
+	#ifdef CONFIG_SLIME_DEBUG_LOGGING
+		ESP_LOGD(TAG, "Calibrated gyroscope sample time: %.2f ms.",		lsm6dsv_qmc6309_sensor_context->lsm6dsv_gyroscope_sample_time);
+		ESP_LOGD(TAG, "Calibrated accelerometer sample time: %.2f ms.",	lsm6dsv_qmc6309_sensor_context->lsm6dsv_accelerometer_sample_time);
+		ESP_LOGD(TAG, "Calibrated magnetometer sample time: %.2f ms.",	lsm6dsv_qmc6309_sensor_context->qmc6309_magnetometer_sample_time);
+	#endif // CONFIG_SLIME_DEBUG_LOGGING
 
 	// Log the progress if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
@@ -916,6 +988,7 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	// Fill the base sensor context struct.
 	base->name					= sensor_context_name;
 	base->register_callbacks	= slime_lsm6dsv_qmc6309_sensor_register_callbacks;
+	base->get_sample_time		= slime_lsm6dsv_qmc6309_sensor_get_sample_time;
 	base->poll_fifo				= slime_lsm6dsv_qmc6309_sensor_poll_fifo;
 	base->delete				= slime_lsm6dsv_qmc6309_sensor_context_del;
 
@@ -933,7 +1006,7 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	lsm6dsv_qmc6309_sensor_context->callbacks_user_context		= NULL;
 
 	// Return the created LSM6DSV+QMC6309 sensor context.
-	*sensor_context_out = &lsm6dsv_qmc6309_sensor_context->base;
+	*sensor_context_out = base;
 
 	// Log the progress if debug logging is enabled.
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
@@ -1079,6 +1152,7 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_context_del(slime_sensor_context_t
 	// Detach all fields in the base sensor context.
 	sensor_context_in->name					= NULL;
 	sensor_context_in->register_callbacks	= NULL;
+	sensor_context_in->get_sample_time		= NULL;
 	sensor_context_in->poll_fifo			= NULL;
 	sensor_context_in->delete				= NULL;
 
@@ -1096,4 +1170,46 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_context_del(slime_sensor_context_t
 	#endif // CONFIG_SLIME_DEBUG_LOGGING
 
 	return ret;
+}
+
+static float_t slime_lsm6dsv_qmc6309_sensor_get_odr(const lsm6dsv_data_rate_t odr) {
+	// Get the ODR value from enum.
+	switch (odr) {
+		case LSM6DSV_ODR_OFF:				return 0.0f;
+		case LSM6DSV_ODR_AT_1Hz875:			return 1.875f;
+		case LSM6DSV_ODR_AT_7Hz5:			return 7.5f;
+		case LSM6DSV_ODR_AT_15Hz:			return 15.0f;
+		case LSM6DSV_ODR_AT_30Hz:			return 30.0f;
+		case LSM6DSV_ODR_AT_60Hz:			return 60.0f;
+		case LSM6DSV_ODR_AT_120Hz:			return 120.0f;
+		case LSM6DSV_ODR_AT_240Hz:			return 240.0f;
+		case LSM6DSV_ODR_AT_480Hz:			return 480.0f;
+		case LSM6DSV_ODR_AT_960Hz:			return 960.0f;
+		case LSM6DSV_ODR_AT_1920Hz:			return 1920.0f;
+		case LSM6DSV_ODR_AT_3840Hz:			return 3840.0f;
+		case LSM6DSV_ODR_AT_7680Hz:			return 7680.0f;
+		case LSM6DSV_ODR_HA01_AT_15Hz625:	return 15.625f;
+		case LSM6DSV_ODR_HA01_AT_31Hz25:	return 31.25f;
+		case LSM6DSV_ODR_HA01_AT_62Hz5:		return 62.5f;
+		case LSM6DSV_ODR_HA01_AT_125Hz:		return 125.0f;
+		case LSM6DSV_ODR_HA01_AT_250Hz:		return 250.0f;
+		case LSM6DSV_ODR_HA01_AT_500Hz:		return 500.0f;
+		case LSM6DSV_ODR_HA01_AT_1000Hz:	return 1000.0f;
+		case LSM6DSV_ODR_HA01_AT_2000Hz:	return 2000.0f;
+		case LSM6DSV_ODR_HA01_AT_4000Hz:	return 4000.0f;
+		case LSM6DSV_ODR_HA01_AT_8000Hz:	return 8000.0f;
+		case LSM6DSV_ODR_HA02_AT_12Hz5:		return 12.5f;
+		case LSM6DSV_ODR_HA02_AT_25Hz:		return 25.0f;
+		case LSM6DSV_ODR_HA02_AT_50Hz:		return 50.0f;
+		case LSM6DSV_ODR_HA02_AT_100Hz:		return 100.0f;
+		case LSM6DSV_ODR_HA02_AT_200Hz:		return 200.0f;
+		case LSM6DSV_ODR_HA02_AT_400Hz:		return 400.0f;
+		case LSM6DSV_ODR_HA02_AT_800Hz:		return 800.0f;
+		case LSM6DSV_ODR_HA02_AT_1600Hz:	return 1600.0f;
+		case LSM6DSV_ODR_HA02_AT_3200Hz:	return 3200.0f;
+		case LSM6DSV_ODR_HA02_AT_6400Hz:	return 6400.0f;
+	}
+
+	// Shoyld never be here.
+	return 0.0f;
 }

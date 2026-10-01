@@ -103,72 +103,72 @@ slime_screen_text_style_t text_style_yellow = {
 
 typedef struct {
 	slime_magneto_context_t*	magneto_context;
-	vqf_context_t*				vqf_context;
+	slime_fusion_context_t*		fusion_context;
 	ceigen_matrix_handle_t		gyroscope;
 	ceigen_matrix_handle_t		accelerometer;
 	ceigen_matrix_handle_t		magnetometer;
 	ceigen_matrix_handle_t		magneto;
-	ceigen_matrix_handle_t		euler_angles;
-	ceigen_matrix_handle_t		rotation_matrix;
 	ceigen_quaternion_handle_t	quaternion;
+	ceigen_matrix_handle_t		rotation_matrix;
+	ceigen_matrix_handle_t		euler_angles;
 	uint8_t						calibrating;
 } slime_main_context_t;
 
 void slime_main_on_gyroscope(
 	const	slime_sensor_context_t*	sensor_context,
-	const	float_t					gyroscope_dps_x,
-	const	float_t					gyroscope_dps_y,
-	const	float_t					gyroscope_dps_z,
+	const	float_t					gyroscope_dps_frd_x,
+	const	float_t					gyroscope_dps_frd_y,
+	const	float_t					gyroscope_dps_frd_z,
 			void*					user_context
 ) {
 	// Get the handles of vectors from the main context.
 	const slime_main_context_t* main_context = (slime_main_context_t*) user_context;
 
 	// Load the raw gyroscope output to the CEigen vector.
-	ceigen_set_matrix_coefficient(main_context->gyroscope, 0U, 0U,	gyroscope_dps_y / 1000.0f * (M_PI / 180.f));
-	ceigen_set_matrix_coefficient(main_context->gyroscope, 1U, 0U,	gyroscope_dps_x / 1000.0f * (M_PI / 180.f));
-	ceigen_set_matrix_coefficient(main_context->gyroscope, 2U, 0U, -gyroscope_dps_z / 1000.0f * (M_PI / 180.f));
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 0U, 0U, gyroscope_dps_frd_x);
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 1U, 0U, gyroscope_dps_frd_y);
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 2U, 0U, gyroscope_dps_frd_z);
 
 	// Skip if calibrating.
 	if (!main_context->calibrating) {
-		// Performs gyroscope update step of VQF.
-		vqf_update_gyr(
-			/* vqf_context	= */ main_context->vqf_context,
-			/* gyr			= */ main_context->gyroscope
+		// Performs gyroscope update step.
+		slime_fusion_update_gyroscope(
+			/* fusion_context		= */ main_context->fusion_context,
+			/* gyroscope_mdps_frd	= */ main_context->gyroscope
 		);
 	}
 }
 
 void slime_main_on_accelerometer(
 	const	slime_sensor_context_t*	sensor_context,
-	const	float_t					accelerometer_mg_x,
-	const	float_t					accelerometer_mg_y,
-	const	float_t					accelerometer_mg_z,
+	const	float_t					accelerometer_mg_frd_x,
+	const	float_t					accelerometer_mg_frd_y,
+	const	float_t					accelerometer_mg_frd_z,
 			void*					user_context
 ) {
 	// Get the handles of vectors from the main context.
 	const slime_main_context_t* main_context = (slime_main_context_t*) user_context;
 
 	// Load the raw accelerometer output to the CEigen vector.
-	ceigen_set_matrix_coefficient(main_context->accelerometer, 0U, 0U,	accelerometer_mg_y * 0.00980665f);
-	ceigen_set_matrix_coefficient(main_context->accelerometer, 1U, 0U,	accelerometer_mg_x * 0.00980665f);
-	ceigen_set_matrix_coefficient(main_context->accelerometer, 2U, 0U, -accelerometer_mg_z * 0.00980665f);
+	ceigen_set_matrix_coefficient(main_context->accelerometer, 0U, 0U, accelerometer_mg_frd_x);
+	ceigen_set_matrix_coefficient(main_context->accelerometer, 1U, 0U, accelerometer_mg_frd_y);
+	ceigen_set_matrix_coefficient(main_context->accelerometer, 2U, 0U, accelerometer_mg_frd_z);
 
 	// Skip if calibrating.
 	if (!main_context->calibrating) {
-		// Performs accelerometer update step of VQF.
-		vqf_update_acc(
-			/* vqf_context	= */ main_context->vqf_context,
-			/* acc			= */ main_context->accelerometer
+		// Performs accelerometer update step.
+		slime_fusion_update_accelerometer(
+			/* fusion_context		= */ main_context->fusion_context,
+			/* accelerometer_mg_frd	= */ main_context->accelerometer
 		);
 	}
 }
 
 void slime_main_on_magnetometer(
 	const	slime_sensor_context_t*	sensor_context,
-	const	float_t					magnetometer_gauss_x,
-	const	float_t					magnetometer_gauss_y,
-	const	float_t					magnetometer_gauss_z,
+	const	float_t					magnetometer_gauss_frd_x,
+	const	float_t					magnetometer_gauss_frd_y,
+	const	float_t					magnetometer_gauss_frd_z,
 			void*					user_context
 ) {
 	slime_main_context_t*		main_context	= (slime_main_context_t*) user_context;
@@ -179,104 +179,50 @@ void slime_main_on_magnetometer(
 			// Collect the raw magnetometer output samples if the sample count is not enough.
 			slime_magneto_collect_sample(
 				/* magneto_context	= */ magneto_context,
-				/* sample_x			= */ magnetometer_gauss_x,
-				/* sample_y			= */ magnetometer_gauss_y,
-				/* sample_z			= */ magnetometer_gauss_z
+				/* sample_x			= */ magnetometer_gauss_frd_x,
+				/* sample_y			= */ magnetometer_gauss_frd_y,
+				/* sample_z			= */ magnetometer_gauss_frd_z
 			);
 			ESP_LOGI(TAG, "Magnetometer calibration raw data output: %.2f, %.2f, %.2f",
-				/* f */ magnetometer_gauss_x,
-				/* f */ magnetometer_gauss_y,
-				/* f */ magnetometer_gauss_z
+				/* f */ magnetometer_gauss_frd_x,
+				/* f */ magnetometer_gauss_frd_y,
+				/* f */ magnetometer_gauss_frd_z
 			);
 		} else {
 			// If the sample count is enough, calculate the calibration coefficients.
 			slime_magneto_calculate_calibration_coefficients(magneto_context);
+
+			// Reset the fusion.
+			slime_fusion_reset(main_context->fusion_context);
 
 			// Stop calibrating.
 			main_context->calibrating = false;
 		}
 	} else if (main_context->magneto_context->valid) {
 		// Load the raw magnetometer data into the magneto calibration input vector.
-		ceigen_set_matrix_coefficient(main_context->magnetometer, 0U, 0U, magnetometer_gauss_x);
-		ceigen_set_matrix_coefficient(main_context->magnetometer, 1U, 0U, magnetometer_gauss_y);
-		ceigen_set_matrix_coefficient(main_context->magnetometer, 2U, 0U, magnetometer_gauss_z);
+		ceigen_set_matrix_coefficient(main_context->magnetometer, 0U, 0U, magnetometer_gauss_frd_x);
+		ceigen_set_matrix_coefficient(main_context->magnetometer, 1U, 0U, magnetometer_gauss_frd_y);
+		ceigen_set_matrix_coefficient(main_context->magnetometer, 2U, 0U, magnetometer_gauss_frd_z);
 
 		// Apply the calibration coefficients to the raw magnetometer output.
 		slime_magneto_apply_calibration_coefficients(
 			/* magneto_context	= */ magneto_context,
 			/* src_vector		= */ main_context->magnetometer,
-			/* dst_vector		= */ main_context->magnetometer
+			/* dst_vector		= */ main_context->magneto
 		);
 
-		const float_t calibrated_magnetometer_gauss_x = ceigen_get_matrix_coefficient(main_context->magnetometer, 0U, 0U);
-		const float_t calibrated_magnetometer_gauss_y = ceigen_get_matrix_coefficient(main_context->magnetometer, 1U, 0U);
-		const float_t calibrated_magnetometer_gauss_z = ceigen_get_matrix_coefficient(main_context->magnetometer, 2U, 0U);
-
-		ceigen_set_matrix_coefficient(main_context->magneto, 0U, 0U,	calibrated_magnetometer_gauss_y);
-		ceigen_set_matrix_coefficient(main_context->magneto, 1U, 0U,	calibrated_magnetometer_gauss_x);
-		ceigen_set_matrix_coefficient(main_context->magneto, 2U, 0U, -	calibrated_magnetometer_gauss_z);
-
-		// Performs magnetometer update step of VQF.
-		vqf_update_mag(
-			/* vqf_context	= */ main_context->vqf_context,
-			/* mag			= */ main_context->magneto
+		// Performs magnetometer update step.
+		slime_fusion_update_magnetometer(
+			/* fusion_context			= */ main_context->fusion_context,
+			/* magnetometer_gauss_frd	= */ main_context->magneto
 		);
 	}
 }
-
-static const vqf_linear_algebra_t slime_vqf_linear_algebra = {
-	.new_matrix								= ceigen_new_matrix,
-	.delete_matrix							= ceigen_delete_matrix,
-	.get_matrix_coefficient					= ceigen_get_matrix_coefficient,
-	.set_matrix_coefficient					= ceigen_set_matrix_coefficient,
-	.add_matrix_coefficient					= ceigen_add_matrix_coefficient,
-	.copy_matrix							= ceigen_copy_matrix,
-	.multiply_matrix						= ceigen_multiply_matrix,
-	.add_matrix								= ceigen_add_matrix,
-	.subtract_matrix						= ceigen_subtract_matrix,
-	.invert_matrix_in_place					= ceigen_invert_matrix_in_place,
-	.transpose_matrix_in_place				= ceigen_transpose_matrix_in_place,
-	.normalize_matrix_in_place				= ceigen_normalize_matrix_in_place,
-	.multiply_matrix_scalar_in_place		= ceigen_multiply_matrix_scalar_in_place,
-	.set_matrix_zeros_in_place				= ceigen_set_matrix_zeros_in_place,
-	.set_matrix_scaled_identity_in_place	= ceigen_set_matrix_scaled_identity_in_place,
-	.get_vector_norm						= ceigen_get_vector_norm,
-	.get_vector_squared_norm				= ceigen_get_vector_squared_norm,
-	.clip_vector_in_place					= ceigen_clip_vector_in_place,
-	.new_matrix_double						= ceigen_new_matrix_double,
-	.delete_matrix_double					= ceigen_delete_matrix_double,
-	.get_matrix_double_coefficient			= ceigen_get_matrix_double_coefficient,
-	.set_matrix_double_coefficient			= ceigen_set_matrix_double_coefficient,
-	.add_matrix_double_coefficient			= ceigen_add_matrix_double_coefficient,
-	.copy_matrix_double						= ceigen_copy_matrix_double,
-	.add_matrix_double						= ceigen_add_matrix_double,
-	.accumulate_matrix_double				= ceigen_accumulate_matrix_double,
-	.multiply_matrix_double_scalar_in_place	= ceigen_multiply_matrix_double_scalar_in_place,
-	.set_matrix_double_zeros_in_place		= ceigen_set_matrix_double_zeros_in_place,
-	.set_matrix_double_constants_in_place	= ceigen_set_matrix_double_constants_in_place,
-	.copy_matrix_to_matrix_double			= ceigen_copy_matrix_to_matrix_double,
-	.copy_matrix_double_to_matrix			= ceigen_copy_matrix_double_to_matrix,
-	.new_quaternion							= ceigen_new_quaternion,
-	.delete_quaternion						= ceigen_delete_quaternion,
-	.set_quaternion_w						= ceigen_set_quaternion_w,
-	.set_quaternion_x						= ceigen_set_quaternion_x,
-	.set_quaternion_y						= ceigen_set_quaternion_y,
-	.set_quaternion_z						= ceigen_set_quaternion_z,
-	.copy_quaternion						= ceigen_copy_quaternion,
-	.multiply_quaternion					= ceigen_multiply_quaternion,
-	.rotate_quaternion_around_z				= ceigen_rotate_quaternion_around_z,
-	.set_quaternion_rotation				= ceigen_set_quaternion_rotation,
-	.quaternion_rotate_vector				= ceigen_quaternion_rotate_vector,
-	.quaternion_to_rotation_matrix			= ceigen_quaternion_to_rotation_matrix,
-	.normalize_quaternion_in_place			= ceigen_normalize_quaternion_in_place,
-	.set_quaternion_identity_in_place		= ceigen_set_quaternion_identity_in_place
-};
 
 void app_main(void) {
 	slime_sensor_error_t	err = SLIME_SENSOR_OK();
 	esp_err_t				ret = ESP_OK;
 
-	vqf_context_t*				vqf_context		= NULL;
 	slime_nvs_context_t*		nvs_context		= NULL;
 	slime_gpio_context_t*		gpio_context	= NULL;
 	slime_i2c_context_t*		i2c_context		= NULL;
@@ -285,6 +231,7 @@ void app_main(void) {
 	slime_button_context_t*		button_context	= NULL;
 	slime_magneto_context_t*	magneto_context	= NULL;
 	slime_sensor_context_t*		sensor_context	= NULL;
+	slime_fusion_context_t*		fusion_context	= NULL;
 
 	uint32_t loop_frame = 0U;
 
@@ -298,16 +245,16 @@ void app_main(void) {
 	ceigen_quaternion_handle_t	quaternion		= NULL;
 	ceigen_quaternion_handle_t	ned_to_enu		= NULL;
 
-	ESP_GOTO_ON_ERROR(					slime_nvs_context_new		(&nvs_context,		&nvs_context_config),									error, TAG, "Failed to create NVS context.");
-	ESP_GOTO_ON_ERROR(					slime_gpio_context_new		(&gpio_context,		&gpio_context_config),									error, TAG, "Failed to create GPIO context.");
-	ESP_GOTO_ON_ERROR(					slime_i2c_context_new		(&i2c_context,		&i2c_context_config),									error, TAG, "Failed to create I2C context.");
-	ESP_GOTO_ON_ERROR(					slime_lcd_context_new		(&lcd_context,		&lcd_context_config,	gpio_context),					error, TAG, "Failed to create LCD context.");
-	ESP_GOTO_ON_ERROR(					slime_screen_context_new	(&screen_context,	&screen_context_config,	lcd_context),					error, TAG, "Failed to create screen context.");
-	ESP_GOTO_ON_ERROR(					slime_button_context_new	(&button_context,	&button_context_config),								error, TAG, "Failed to create button context.");
-	ESP_GOTO_ON_ERROR(					slime_magneto_context_new	(&magneto_context,	&slime_magneto_context_config, nvs_context),			error, TAG, "Failed to create magneto context.");
-	ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(	slime_sensor_context_new	(&sensor_context,	slime_sensor_type_table, gpio_context, i2c_context)),	error, TAG, "Failed to create sensor context.");
+	ESP_GOTO_ON_ERROR(					slime_nvs_context_new		(&nvs_context,		&nvs_context_config),											error, TAG, "Failed to create NVS context.");
+	ESP_GOTO_ON_ERROR(					slime_gpio_context_new		(&gpio_context,		&gpio_context_config),											error, TAG, "Failed to create GPIO context.");
+	ESP_GOTO_ON_ERROR(					slime_i2c_context_new		(&i2c_context,		&i2c_context_config),											error, TAG, "Failed to create I2C context.");
+	ESP_GOTO_ON_ERROR(					slime_lcd_context_new		(&lcd_context,		&lcd_context_config,	gpio_context),							error, TAG, "Failed to create LCD context.");
+	ESP_GOTO_ON_ERROR(					slime_screen_context_new	(&screen_context,	&screen_context_config,	lcd_context),							error, TAG, "Failed to create screen context.");
+	ESP_GOTO_ON_ERROR(					slime_button_context_new	(&button_context,	&button_context_config),										error, TAG, "Failed to create button context.");
+	ESP_GOTO_ON_ERROR(					slime_magneto_context_new	(&magneto_context,	&slime_magneto_context_config, nvs_context),					error, TAG, "Failed to create magneto context.");
+	ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(	slime_sensor_context_new	(&sensor_context,	slime_sensor_context_type_table, gpio_context, i2c_context)),	error, TAG, "Failed to create sensor context.");
+	ESP_GOTO_ON_ERROR(					slime_fusion_context_new	(&fusion_context,	slime_fusion_context_type_table, sensor_context, 0U),			error, TAG, "Failed to create fusion context.");
 
-	vqf_context		= vqf_context_new		(&slime_vqf_linear_algebra, &vqf_params_default, 1.0f / 240.0f, 1.0f / 120.0f, 1.0f / 50.0f);
 	main_context	= calloc				(1U, sizeof(slime_main_context_t));
 	gyroscope		= ceigen_new_matrix		(3U, 1U);
 	accelerometer	= ceigen_new_matrix		(3U, 1U);
@@ -318,7 +265,6 @@ void app_main(void) {
 	quaternion		= ceigen_new_quaternion	();
 	ned_to_enu		= ceigen_new_quaternion	();
 
-	ESP_GOTO_ON_FALSE(vqf_context		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create VQF context.");
 	ESP_GOTO_ON_FALSE(main_context		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create main context.");
 	ESP_GOTO_ON_FALSE(gyroscope			!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create gyroscope vector.");
 	ESP_GOTO_ON_FALSE(accelerometer		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create accelerometer vector.");
@@ -328,6 +274,7 @@ void app_main(void) {
 	ESP_GOTO_ON_FALSE(rotation_matrix	!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create rotation matrix.");
 	ESP_GOTO_ON_FALSE(quaternion		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create quaternion.");
 	ESP_GOTO_ON_FALSE(ned_to_enu		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create coordinate system conversion quaternion.");
+	ESP_GOTO_ON_FALSE(fusion_context	!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create fusion context.");
 
 	ceigen_set_quaternion_w(ned_to_enu, 0);
 	ceigen_set_quaternion_x(ned_to_enu, M_SQRT1_2);
@@ -348,14 +295,14 @@ void app_main(void) {
 	), error, TAG, "Failed to register accelerometer FIFO callback.");
 
 	main_context->magneto_context	= magneto_context;
-	main_context->vqf_context		= vqf_context;
+	main_context->fusion_context	= fusion_context;
 	main_context->gyroscope			= gyroscope;
 	main_context->accelerometer		= accelerometer;
 	main_context->magnetometer		= magnetometer;
 	main_context->magneto			= magneto;
-	main_context->euler_angles		= euler_angles;
-	main_context->rotation_matrix	= rotation_matrix;
 	main_context->quaternion		= quaternion;
+	main_context->rotation_matrix	= rotation_matrix;
+	main_context->euler_angles		= euler_angles;
 	main_context->calibrating		= false;
 
 	slime_gpio_led_set_level(gpio_context, 1);
@@ -446,22 +393,10 @@ void app_main(void) {
 				);
 			} else {
 				// Update the 9D quaternion in main context.
-				vqf_get_quat_9D(
-					/* vqf_context	= */ main_context->vqf_context,
-					/* out			= */ main_context->quaternion
-				);
-
-				// Transform the 9D quaternion from ENU to NED.
-				ceigen_multiply_quaternion(
-					/* left_quaternion			= */ ned_to_enu,
-					/* right_quaternion			= */ main_context->quaternion,
-					/* destination_quaternion	= */ main_context->quaternion
-				);
-
-				ceigen_multiply_quaternion(
-					/* left_quaternion			= */ main_context->quaternion,
-					/* right_quaternion			= */ ned_to_enu,
-					/* destination_quaternion	= */ main_context->quaternion
+				slime_fusion_get_orientation(
+					/* fusion_context			= */ main_context->fusion_context,
+					/* quaternion_ned_6D_out	= */ NULL,
+					/* quaternion_ned_9D_out	= */ main_context->quaternion
 				);
 
 				// Convert the quaternion to rotation matrix.
