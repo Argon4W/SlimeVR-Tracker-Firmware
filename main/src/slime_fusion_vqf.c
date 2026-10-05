@@ -75,7 +75,13 @@ static const vqf_linear_algebra_t slime_vqf_linear_algebra = {
 	.set_quaternion_identity		= ceigen_set_quaternion_identity
 };
 
-esp_err_t slime_vqf_fusion_update_gyroscope(
+/**
+ * @brief						Do the gyroscope update of the VQF fusion.
+ * @param fusion_context		The VQF fusion context to do the gyroscope update.
+ * @param gyroscope_rad_enu		The angular speed in radian(s)-per-second and ENU frame.
+ * @return						The status of the gyroscope update.
+ */
+static esp_err_t slime_vqf_fusion_update_gyroscope(
 			slime_fusion_context_t*	fusion_context,
 	const	ceigen_matrix_handle_t	gyroscope_rad_enu
 ) {
@@ -109,7 +115,13 @@ esp_err_t slime_vqf_fusion_update_gyroscope(
 	return ESP_OK;
 }
 
-esp_err_t slime_vqf_fusion_update_accelerometer(
+/**
+ * @brief						Do the accelerometer update of the VQF fusion.
+ * @param fusion_context		The VQF fusion context to do the accelerometer update.
+ * @param accelerometer_ms2_enu	The gravity in meter(s)per-second-squared and ENU frame.
+ * @return						The status of the accelerometer update.
+ */
+static esp_err_t slime_vqf_fusion_update_accelerometer(
 			slime_fusion_context_t*	fusion_context,
 	const	ceigen_matrix_handle_t	accelerometer_ms2_enu
 ) {
@@ -143,7 +155,13 @@ esp_err_t slime_vqf_fusion_update_accelerometer(
 	return ESP_OK;
 }
 
-esp_err_t slime_vqf_fusion_update_magnetometer(
+/**
+ * @brief							Do the magnetometer update of the VQF fusion.
+ * @param fusion_context			The VQF fusion context to do the magnetometer update.
+ * @param magnetometer_gauss_enu	The magnetic flux density in gauss and ENU frame.
+ * @return							The status of the magnetometer update.
+ */
+static esp_err_t slime_vqf_fusion_update_magnetometer(
 			slime_fusion_context_t*	fusion_context,
 	const	ceigen_matrix_handle_t	magnetometer_gauss_enu
 ) {
@@ -177,7 +195,14 @@ esp_err_t slime_vqf_fusion_update_magnetometer(
 	return ESP_OK;
 }
 
-esp_err_t slime_vqf_fusion_get_orientation(
+/**
+ * @brief						Get the fused orientations of the VQF fusion.\
+ * @param fusion_context		The VQF fusion context to get the fused orientations.
+ * @param quaternion_enu_6D_out	The output 6D (gyro+accel) orientation in quaternion form in ENU earth frame, can be NULL.
+ * @param quaternion_enu_9D_out	The output 9D (gyro+accel+mag) orientation in quaternion form in ENU earth frame, can be NULL.
+ * @return						The status of getting fused orientations.
+ */
+static esp_err_t slime_vqf_fusion_get_orientation(
 	const	slime_fusion_context_t*		fusion_context,
 			ceigen_quaternion_handle_t	quaternion_enu_6D_out,
 			ceigen_quaternion_handle_t	quaternion_enu_9D_out
@@ -232,7 +257,14 @@ esp_err_t slime_vqf_fusion_get_orientation(
 	return ESP_OK;
 }
 
-esp_err_t slime_vqf_fusion_get_state(
+/**
+ * @brief					Get the states of the VQF fusion.
+ * @param fusion_context	The VQF fusion context to get the states.
+ * @param mag_disturbed_out	The handle to receive the state of magnetic disturbance.
+ * @param rest_detected_out	The handle to receive the state of rest detection.
+ * @return					The status of getting states.
+ */
+static esp_err_t slime_vqf_fusion_get_state(
 	const	slime_fusion_context_t*	fusion_context,
 			uint8_t*				mag_disturbed_out,
 			uint8_t*				rest_detected_out
@@ -267,7 +299,12 @@ esp_err_t slime_vqf_fusion_get_state(
 	return ESP_OK;
 }
 
-esp_err_t slime_vqf_fusion_reset(slime_fusion_context_t* fusion_context) {
+/**
+ * @brief					Reset the VQF fusion.
+ * @param fusion_context	The VQF fusion context to reset.
+ * @return					The status of the resetting.
+ */
+static esp_err_t slime_vqf_fusion_reset(slime_fusion_context_t* fusion_context) {
 	// We cannot proceed without a context.
 	ESP_RETURN_ON_FALSE(fusion_context != NULL, ESP_ERR_INVALID_ARG, TAG, "No fusion_context handle provided when performing resetting fusion.");
 
@@ -294,7 +331,7 @@ esp_err_t slime_vqf_fusion_reset(slime_fusion_context_t* fusion_context) {
  * @param fusion_context_in	The VQF fusion context to be released.
  * @return					The status of the releasing.
  */
-esp_err_t slime_vqf_fusion_context_del(slime_fusion_context_t* fusion_context_in);
+static esp_err_t slime_vqf_fusion_context_del(slime_fusion_context_t* fusion_context_in);
 
 esp_err_t slime_vqf_fusion_context_new(
 			slime_fusion_context_t**	fusion_context_out,

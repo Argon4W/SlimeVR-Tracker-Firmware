@@ -157,6 +157,14 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_register_callbacks(
 	return ESP_OK;
 }
 
+/**
+ * @brief								Get the sample times of the LSM6DSV and QMC6309.
+ * @param sensor_context				The LSM6DSV+QMC6309 sensor context to get the sample times.
+ * @param gyroscope_sample_time_ms		The handle to receive the gyroscope sample time in milliseconds.
+ * @param accelerometer_sample_time_ms	The handle to receive the accelerometer sample time in milliseconds.
+ * @param magnetometer_sample_time_ms	The handle to receive the magnetometer sample time in milliseconds.
+ * @return								The status of getting sample times.
+ */
 esp_err_t slime_lsm6dsv_qmc6309_sensor_get_sample_time(
 	const	slime_sensor_context_t*	sensor_context,
 			float_t*				gyroscope_sample_time_ms,

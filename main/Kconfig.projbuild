@@ -8,6 +8,36 @@ menu "SlimeVR Tracker Firmware Configuration"
 		help
 			Enable this option will enable the output of debug logging.
 
+	menu "Wi-Fi Configuration"
+
+		config SLIME_WIFI_CRED_SSID
+			string "Wi-Fi SSID"
+			default "SSID"
+			help
+				The SSID of the hardcoded default Wi-Fi credentials to connect.
+
+		config SLIME_WIFI_CRED_PASS
+			string "Wi-Fi Password"
+			default "PASS"
+			help
+				The password of the hardcoded default Wi-Fi credentials to connect.
+
+		config SLIME_WIFI_MAX_RETRY_COUNT
+			int "Wi-Fi Max Retry Count"
+			range 1 100
+			default 10
+			help
+				The maximum retry count of reconnecting Wi-Fi station to AP before aborting.
+
+		config SLIME_WIFI_DEBUG_LOGGING
+			bool "Enable Wi-Fi Debug Logging"
+			default n
+			depends on SLIME_DEBUG_LOGGING
+			help
+				Enable this option will enable the output of Wi-Fi debug logging.
+
+	endmenu
+
 	menu "NVS Configuration"
 
 		config SLIME_NVS_PARTITION

@@ -2,6 +2,7 @@
 #define SLIME_MAIN_H
 
 #include "slime_nvs.h"
+#include "slime_wifi.h"
 #include "slime_gpio.h"
 #include "slime_i2c.h"
 #include "slime_lcd.h"

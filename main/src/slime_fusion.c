@@ -170,7 +170,7 @@ esp_err_t slime_fusion_update_timestamp(
 	#ifdef CONFIG_SLIME_DEBUG_LOGGING
 		ESP_LOGD(TAG, "Fusion context \"%s\" is trying doing timestamp update. (delta %.2f seconds)",
 			/* s	*/ fusion_context->name,
-			/* .2f	*/ delta_timestamp_seconds,
+			/* .2f	*/ delta_timestamp_seconds
 		);
 	#endif // CONFIG_SLIME_DEBUG_LOGGING
 

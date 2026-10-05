@@ -2,6 +2,7 @@
 #define SLIME_CONFIG_H
 
 #include "slime_nvs.h"
+#include "slime_wifi.h"
 #include "slime_gpio.h"
 #include "slime_i2c.h"
 #include "slime_lcd.h"
@@ -19,6 +20,11 @@ extern "C" {
  * @brief The configuration of the NVS context.
  */
 extern const slime_nvs_context_config_t nvs_context_config;
+
+/**
+ * @brief The configuration of the Wi-Fi context.
+ */
+extern const slime_wifi_context_config_t wifi_context_config;
 
 /**
  * @brief The configuration of the GPIO context.

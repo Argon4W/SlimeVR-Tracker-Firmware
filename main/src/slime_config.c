@@ -88,6 +88,17 @@ const slime_nvs_context_config_t nvs_context_config = {
 	.namespace = CONFIG_SLIME_NVS_NAMESPACE, /*!< Configurable NVS namespace. */
 };
 
+const slime_wifi_context_config_t wifi_context_config = {
+	.wifi_sta_config = {									/*!< The Wi-Fi station configuration. */
+		.ssid				= CONFIG_SLIME_WIFI_CRED_SSID,	/*!< Configurable Wi-Fi credential SSID. */
+		.password			= CONFIG_SLIME_WIFI_CRED_PASS,	/*!< Configurable Wi-Fi credential Password. */
+		.scan_method		= WIFI_ALL_CHANNEL_SCAN,		/*!< Do all channel scan. */
+		.sort_method		= WIFI_CONNECT_AP_BY_SIGNAL,	/*!< Scan results sorted by signal. */
+		.threshold.authmode	= WIFI_AUTH_WPA_WPA2_PSK		/*!< Recommended security threshold. */
+	},
+	.max_retry_count = CONFIG_SLIME_WIFI_MAX_RETRY_COUNT /*!< Configurable maximum retry count. */
+};
+
 const slime_gpio_context_config_t gpio_context_config = {
 	.led_gpio_config = {									/*!< The configuration of the LED GPIO. */
 		.pin_bit_mask	= 1ULL << CONFIG_SLIME_GPIO_LED,	/*!< The configurable GPIO Num of the LED on the sensor board. */

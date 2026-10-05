@@ -28,7 +28,7 @@ static const magneto_linear_algebra_context_t slime_magneto_linear_algebra_conte
 };
 
 esp_err_t slime_magneto_calculate_calibration_coefficients(slime_magneto_context_t* magneto_context) {
-	// We cannot proceed without a handle and samples.
+	// We cannot proceed without a context and samples.
 	ESP_RETURN_ON_FALSE(magneto_context											!= NULL,	ESP_ERR_INVALID_ARG,	TAG, "No slime_magneto_context_t handle provided when performing calculating calibration coefficients.");
 	ESP_RETURN_ON_FALSE(magneto_context->sample_container->sample_norm_count	!= 0U,		ESP_ERR_INVALID_STATE,	TAG, "No sample recorded in the magneto context when performing calculating calibration coefficients.");
 
@@ -156,7 +156,7 @@ esp_err_t slime_magneto_calculate_calibration_coefficients(slime_magneto_context
 }
 
 esp_err_t slime_magneto_reset_calibration_coefficients(slime_magneto_context_t* magneto_context) {
-	// We cannot proceed without a handle.
+	// We cannot proceed without a context.
 	ESP_RETURN_ON_FALSE(magneto_context != NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_magneto_context_t handle provided when performing calculating calibration coefficients.");
 
 	// Log the operation if debug logging is enabled.
@@ -261,7 +261,7 @@ esp_err_t slime_magneto_apply_calibration_coefficients(
 	const ceigen_matrix_handle_t	src_vector,
 	const ceigen_matrix_handle_t	dst_vector
 ) {
-	// We cannot proceed without the source vector of raw magnetometer output, the destination vector to receive the calibrated result, and a handle.
+	// We cannot proceed without the source vector of raw magnetometer output, the destination vector to receive the calibrated result, and a context.
 	ESP_RETURN_ON_FALSE(magneto_context	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_magneto_context_t handle provided when performing applying calibration coefficients to the magnetometer output.");
 	ESP_RETURN_ON_FALSE(src_vector		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No source raw magnetometer output provided when performing applying calibration coefficients to the magnetometer output.");
 	ESP_RETURN_ON_FALSE(dst_vector		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No destination vector provided to receive the calibrated result when performing applying calibration coefficients to the magnetometer output.");
@@ -328,7 +328,7 @@ esp_err_t slime_magneto_collect_sample(
 			float_t						sample_y,
 			float_t						sample_z
 ) {
-	// We cannot proceed without a handle.
+	// We cannot proceed without a context.
 	ESP_RETURN_ON_FALSE(magneto_context	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_magneto_context_t handle provided when performing collecting sample.");
 
 	// Log the operation if debug logging is enabled.
@@ -577,7 +577,7 @@ esp_err_t slime_magneto_context_new(
 }
 
 esp_err_t slime_magneto_context_del(slime_magneto_context_t* magneto_context_in) {
-	// We cannot proceed without a handle.
+	// We cannot proceed without a context.
 	ESP_RETURN_ON_FALSE(magneto_context_in != NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_magneto_context_t handle provided when releasing magneto context.");
 
 	// Log the progress if debug logging is enabled.

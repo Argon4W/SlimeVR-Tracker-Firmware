@@ -224,6 +224,7 @@ void app_main(void) {
 	esp_err_t				ret = ESP_OK;
 
 	slime_nvs_context_t*		nvs_context		= NULL;
+	slime_wifi_context_t*		wifi_context	= NULL;
 	slime_gpio_context_t*		gpio_context	= NULL;
 	slime_i2c_context_t*		i2c_context		= NULL;
 	slime_lcd_context_t*		lcd_context		= NULL;
@@ -246,6 +247,7 @@ void app_main(void) {
 	ceigen_quaternion_handle_t	ned_to_enu		= NULL;
 
 	ESP_GOTO_ON_ERROR(					slime_nvs_context_new		(&nvs_context,		&nvs_context_config),											error, TAG, "Failed to create NVS context.");
+	ESP_GOTO_ON_ERROR(					slime_wifi_context_new		(&wifi_context,		&wifi_context_config),											error, TAG, "Failed to create network context.");
 	ESP_GOTO_ON_ERROR(					slime_gpio_context_new		(&gpio_context,		&gpio_context_config),											error, TAG, "Failed to create GPIO context.");
 	ESP_GOTO_ON_ERROR(					slime_i2c_context_new		(&i2c_context,		&i2c_context_config),											error, TAG, "Failed to create I2C context.");
 	ESP_GOTO_ON_ERROR(					slime_lcd_context_new		(&lcd_context,		&lcd_context_config,	gpio_context),							error, TAG, "Failed to create LCD context.");
@@ -365,6 +367,10 @@ void app_main(void) {
 
 	while (true) {
 		if ((loop_frame ++) % 5U == 0U) {
+			uint8_t connected = false;
+
+			ESP_GOTO_ON_ERROR(slime_wifi_is_connected(wifi_context, &connected), error, TAG, "Failed to get connection state.");
+
 			slime_screen_draw_rectangle(
 				/* screen_context	= */ screen_context,
 				/* position_x		= */ 0,
@@ -440,7 +446,7 @@ void app_main(void) {
 
 				slime_screen_draw_string_fmt(
 					/* screen_context	= */ screen_context,
-					/* text_style		= */ &text_style_green,
+					/* text_style		= */ connected ? &text_style_green : &text_style_yellow,
 					/* position_x		= */ 5,
 					/* position_y		= */ 0,
 					/* string			= */ "Y: %.2f\nP: %.2f\nR: %.2f",
