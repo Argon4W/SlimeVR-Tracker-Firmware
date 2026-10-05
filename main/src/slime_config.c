@@ -96,7 +96,7 @@ const slime_wifi_context_config_t wifi_context_config = {
 		.sort_method		= WIFI_CONNECT_AP_BY_SIGNAL,	/*!< Scan results sorted by signal. */
 		.threshold.authmode	= WIFI_AUTH_WPA_WPA2_PSK		/*!< Recommended security threshold. */
 	},
-	.max_retry_count = CONFIG_SLIME_WIFI_MAX_RETRY_COUNT /*!< Configurable maximum retry count. */
+	.credential_retry_count_max = CONFIG_SLIME_WIFI_MAX_RETRY_COUNT /*!< Configurable maximum retry count. */
 };
 
 const slime_gpio_context_config_t gpio_context_config = {
