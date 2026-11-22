@@ -80,8 +80,8 @@ esp_err_t slime_magneto_reset_calibration_coefficients(slime_magneto_context_t* 
  */
 esp_err_t slime_magneto_apply_calibration_coefficients(
 	const	slime_magneto_context_t*	magneto_context,
-			ceigen_matrix_handle_t			src_vector,
-			ceigen_matrix_handle_t			dst_vector
+			ceigen_matrix_handle_t		src_vector,
+			ceigen_matrix_handle_t		dst_vector
 );
 
 /**

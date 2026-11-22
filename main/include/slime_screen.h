@@ -8,6 +8,16 @@
 #include "freertos/task.h"
 #include "slime_lcd.h"
 
+/**
+ * @brief The event group bit indicating that screen transmission task should stop.
+ */
+#define SLIME_SCREEN_STOP BIT0
+
+/**
+ * @brief The event group bit indicating that screen transmission task has stopped.
+ */
+#define SLIME_SCREEN_STOPPED BIT1
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -16,10 +26,11 @@ extern "C" {
  * @brief The configuration struct of the transmission task of the screen context.
  */
 typedef struct {
-	uint32_t transmit_framerate;	/*!< The framerate of the transmission task. */
-	uint32_t task_core_id;			/*!< The core ID of the transmission task. */
-	uint32_t task_stack_depth;		/*!< The stack depth of the transmission task. */
-	uint32_t task_priority;			/*!< The priority of the transmission task. */
+	uint32_t	transmit_framerate;	/*!< The framerate of the transmission task. */
+	uint32_t	task_core_id;		/*!< The core ID of the transmission task. */
+	uint32_t	task_stack_depth;	/*!< The stack depth of the transmission task. */
+	uint32_t	task_priority;		/*!< The priority of the transmission task. */
+	char*		task_name;			/*!< The name of the transmission task. */
 } slime_screen_transmit_task_config_t;
 
 /**
@@ -39,6 +50,7 @@ typedef struct {
 	slime_lcd_context_t*				lcd_context;				/*!< The LCD context of the screen. */
 	esp_fast_lcd_panel_device_t*		fast_lcd_panel_device;		/*!< The rendering backend of the screen. */
 	esp_fast_text_engine_instance_t*	fast_text_engine_instance;	/*!< The text rendering engine of the screen. */
+	EventGroupHandle_t					transmit_task_events;		/*!< The event group of the transmission task. */
 	TaskHandle_t						transmit_task_handle;		/*!< The task handle of the transmission task. */
 	uint32_t							transmit_framerate;			/*!< The framerate of the transmission task in FPS (frames-per-second). */
 } slime_screen_context_t;
@@ -88,10 +100,7 @@ typedef struct {
  * @param screen_backlight	The status of the backlight ("1" = turn on backlight; "0" = turn off backlight).
  * @return					The status of controlling the backlight.
  */
-esp_err_t slime_screen_set_backlight(
-	const	slime_screen_context_t*	screen_context,
-			uint8_t					screen_backlight
-);
+esp_err_t slime_screen_set_backlight(const slime_screen_context_t* screen_context, uint8_t screen_backlight);
 
 /**
  * @brief					Draw a pixel on the framebuffer of the given screen.

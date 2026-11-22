@@ -75,10 +75,7 @@ esp_err_t slime_i2c_set_device_address(
  * @param i2c_context_config	The configuration of the I2C context.
  * @return						The status of the creation.
  */
-esp_err_t slime_i2c_context_new(
-			slime_i2c_context_t**		i2c_context_out,
-	const	slime_i2c_context_config_t*	i2c_context_config
-);
+esp_err_t slime_i2c_context_new(slime_i2c_context_t** i2c_context_out, const slime_i2c_context_config_t* i2c_context_config);
 
 /**
  * @brief					Release the I2C context.

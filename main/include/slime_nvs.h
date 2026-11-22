@@ -66,10 +66,7 @@ esp_err_t slime_nvs_save_blob(
  * @param nvs_context_config	The configuration of the NVS context.
  * @return						The status of the creation.
  */
-esp_err_t slime_nvs_context_new(
-			slime_nvs_context_t**		nvs_context_out,
-	const	slime_nvs_context_config_t*	nvs_context_config
-);
+esp_err_t slime_nvs_context_new(slime_nvs_context_t** nvs_context_out, const slime_nvs_context_config_t* nvs_context_config);
 
 /**
  * @brief					Release the NVS context.

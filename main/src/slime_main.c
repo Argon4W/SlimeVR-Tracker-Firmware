@@ -1,3 +1,4 @@
+#include "endian.h"
 #include "tgmath.h"
 #include "sdkconfig.h"
 #include "esp_check.h"
@@ -9,6 +10,8 @@
 #include "lsm6dsv_reg.h"
 #include "qmc6309_reg.h"
 #include "slime_main.h"
+
+#include <slime_network.h>
 
 static const char* TAG = "slime_main";
 
@@ -116,59 +119,59 @@ typedef struct {
 
 void slime_main_on_gyroscope(
 	const	slime_sensor_context_t*	sensor_context,
-	const	float_t					gyroscope_mdps_frd_x,
-	const	float_t					gyroscope_mdps_frd_y,
-	const	float_t					gyroscope_mdps_frd_z,
+	const	float_t					gyroscope_mdps_enu_x,
+	const	float_t					gyroscope_mdps_enu_y,
+	const	float_t					gyroscope_mdps_enu_z,
 			void*					user_context
 ) {
 	// Get the handles of vectors from the main context.
 	const slime_main_context_t* main_context = (slime_main_context_t*) user_context;
 
 	// Load the raw gyroscope output to the CEigen vector.
-	ceigen_set_matrix_coefficient(main_context->gyroscope, 0U, 0U, gyroscope_mdps_frd_x);
-	ceigen_set_matrix_coefficient(main_context->gyroscope, 1U, 0U, gyroscope_mdps_frd_y);
-	ceigen_set_matrix_coefficient(main_context->gyroscope, 2U, 0U, gyroscope_mdps_frd_z);
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 0U, 0U, gyroscope_mdps_enu_x);
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 1U, 0U, gyroscope_mdps_enu_y);
+	ceigen_set_matrix_coefficient(main_context->gyroscope, 2U, 0U, gyroscope_mdps_enu_z);
 
 	// Skip if calibrating.
 	if (!main_context->calibrating) {
 		// Performs gyroscope update step.
 		slime_fusion_update_gyroscope(
 			/* fusion_context		= */ main_context->fusion_context,
-			/* gyroscope_mdps_frd	= */ main_context->gyroscope
+			/* gyroscope_mdps_rfu	= */ main_context->gyroscope
 		);
 	}
 }
 
 void slime_main_on_accelerometer(
 	const	slime_sensor_context_t*	sensor_context,
-	const	float_t					accelerometer_mg_frd_x,
-	const	float_t					accelerometer_mg_frd_y,
-	const	float_t					accelerometer_mg_frd_z,
+	const	float_t					accelerometer_mg_enu_x,
+	const	float_t					accelerometer_mg_enu_y,
+	const	float_t					accelerometer_mg_enu_z,
 			void*					user_context
 ) {
 	// Get the handles of vectors from the main context.
 	const slime_main_context_t* main_context = (slime_main_context_t*) user_context;
 
 	// Load the raw accelerometer output to the CEigen vector.
-	ceigen_set_matrix_coefficient(main_context->accelerometer, 0U, 0U, accelerometer_mg_frd_x);
-	ceigen_set_matrix_coefficient(main_context->accelerometer, 1U, 0U, accelerometer_mg_frd_y);
-	ceigen_set_matrix_coefficient(main_context->accelerometer, 2U, 0U, accelerometer_mg_frd_z);
+	ceigen_set_matrix_coefficient(main_context->accelerometer, 0U, 0U, accelerometer_mg_enu_x);
+	ceigen_set_matrix_coefficient(main_context->accelerometer, 1U, 0U, accelerometer_mg_enu_y);
+	ceigen_set_matrix_coefficient(main_context->accelerometer, 2U, 0U, accelerometer_mg_enu_z);
 
 	// Skip if calibrating.
 	if (!main_context->calibrating) {
 		// Performs accelerometer update step.
 		slime_fusion_update_accelerometer(
 			/* fusion_context		= */ main_context->fusion_context,
-			/* accelerometer_mg_frd	= */ main_context->accelerometer
+			/* accelerometer_mg_rfu	= */ main_context->accelerometer
 		);
 	}
 }
 
 void slime_main_on_magnetometer(
 	const	slime_sensor_context_t*	sensor_context,
-	const	float_t					magnetometer_gauss_frd_x,
-	const	float_t					magnetometer_gauss_frd_y,
-	const	float_t					magnetometer_gauss_frd_z,
+	const	float_t					magnetometer_gauss_enu_x,
+	const	float_t					magnetometer_gauss_enu_y,
+	const	float_t					magnetometer_gauss_enu_z,
 			void*					user_context
 ) {
 	slime_main_context_t*		main_context	= (slime_main_context_t*)	user_context;
@@ -179,14 +182,14 @@ void slime_main_on_magnetometer(
 			// Collect the raw magnetometer output samples if the sample count is not enough.
 			slime_magneto_collect_sample(
 				/* magneto_context	= */ magneto_context,
-				/* sample_x			= */ magnetometer_gauss_frd_x,
-				/* sample_y			= */ magnetometer_gauss_frd_y,
-				/* sample_z			= */ magnetometer_gauss_frd_z
+				/* sample_x			= */ magnetometer_gauss_enu_x,
+				/* sample_y			= */ magnetometer_gauss_enu_y,
+				/* sample_z			= */ magnetometer_gauss_enu_z
 			);
 			ESP_LOGI(TAG, "Magnetometer calibration raw data output: %.2f, %.2f, %.2f",
-				/* f */ magnetometer_gauss_frd_x,
-				/* f */ magnetometer_gauss_frd_y,
-				/* f */ magnetometer_gauss_frd_z
+				/* f */ magnetometer_gauss_enu_x,
+				/* f */ magnetometer_gauss_enu_y,
+				/* f */ magnetometer_gauss_enu_z
 			);
 		} else {
 			// If the sample count is enough, calculate the calibration coefficients.
@@ -200,9 +203,9 @@ void slime_main_on_magnetometer(
 		}
 	} else if (main_context->magneto_context->valid) {
 		// Load the raw magnetometer data into the magneto calibration input vector.
-		ceigen_set_matrix_coefficient(main_context->magnetometer, 0U, 0U, magnetometer_gauss_frd_x);
-		ceigen_set_matrix_coefficient(main_context->magnetometer, 1U, 0U, magnetometer_gauss_frd_y);
-		ceigen_set_matrix_coefficient(main_context->magnetometer, 2U, 0U, magnetometer_gauss_frd_z);
+		ceigen_set_matrix_coefficient(main_context->magnetometer, 0U, 0U, magnetometer_gauss_enu_x);
+		ceigen_set_matrix_coefficient(main_context->magnetometer, 1U, 0U, magnetometer_gauss_enu_y);
+		ceigen_set_matrix_coefficient(main_context->magnetometer, 2U, 0U, magnetometer_gauss_enu_z);
 
 		// Apply the calibration coefficients to the raw magnetometer output.
 		slime_magneto_apply_calibration_coefficients(
@@ -214,7 +217,7 @@ void slime_main_on_magnetometer(
 		// Performs magnetometer update step.
 		slime_fusion_update_magnetometer(
 			/* fusion_context			= */ main_context->fusion_context,
-			/* magnetometer_gauss_frd	= */ main_context->magneto
+			/* magnetometer_gauss_rfu	= */ main_context->magneto
 		);
 	}
 }
@@ -224,7 +227,6 @@ void app_main(void) {
 	esp_err_t				ret = ESP_OK;
 
 	slime_nvs_context_t*		nvs_context		= NULL;
-	slime_wifi_context_t*		wifi_context	= NULL;
 	slime_gpio_context_t*		gpio_context	= NULL;
 	slime_i2c_context_t*		i2c_context		= NULL;
 	slime_lcd_context_t*		lcd_context		= NULL;
@@ -233,6 +235,8 @@ void app_main(void) {
 	slime_magneto_context_t*	magneto_context	= NULL;
 	slime_sensor_context_t*		sensor_context	= NULL;
 	slime_fusion_context_t*		fusion_context	= NULL;
+	slime_wifi_context_t*		wifi_context	= NULL;
+	slime_network_context_t*	network_context	= NULL;
 
 	uint32_t loop_frame = 0U;
 
@@ -244,10 +248,8 @@ void app_main(void) {
 	ceigen_matrix_handle_t		euler_angles	= NULL;
 	ceigen_matrix_handle_t		rotation_matrix	= NULL;
 	ceigen_quaternion_handle_t	quaternion		= NULL;
-	ceigen_quaternion_handle_t	ned_to_enu		= NULL;
 
 	ESP_GOTO_ON_ERROR(					slime_nvs_context_new		(&nvs_context,		&nvs_context_config),											error, TAG, "Failed to create NVS context.");
-	ESP_GOTO_ON_ERROR(					slime_wifi_context_new		(&wifi_context,		&wifi_context_config),											error, TAG, "Failed to create network context.");
 	ESP_GOTO_ON_ERROR(					slime_gpio_context_new		(&gpio_context,		&gpio_context_config),											error, TAG, "Failed to create GPIO context.");
 	ESP_GOTO_ON_ERROR(					slime_i2c_context_new		(&i2c_context,		&i2c_context_config),											error, TAG, "Failed to create I2C context.");
 	ESP_GOTO_ON_ERROR(					slime_lcd_context_new		(&lcd_context,		&lcd_context_config,	gpio_context),							error, TAG, "Failed to create LCD context.");
@@ -256,6 +258,8 @@ void app_main(void) {
 	ESP_GOTO_ON_ERROR(					slime_magneto_context_new	(&magneto_context,	&slime_magneto_context_config, nvs_context),					error, TAG, "Failed to create magneto context.");
 	ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(	slime_sensor_context_new	(&sensor_context,	slime_sensor_context_type_table, gpio_context, i2c_context)),	error, TAG, "Failed to create sensor context.");
 	ESP_GOTO_ON_ERROR(					slime_fusion_context_new	(&fusion_context,	slime_fusion_context_type_table, sensor_context, 0U),			error, TAG, "Failed to create fusion context.");
+	ESP_GOTO_ON_ERROR(					slime_wifi_context_new		(&wifi_context,		&wifi_context_config),											error, TAG, "Failed to create network context.");
+	ESP_GOTO_ON_ERROR(					slime_network_context_new	(&network_context,	&network_context_config, wifi_context),							error, TAG, "Failed to create network context.");
 
 	main_context	= calloc				(1U, sizeof(slime_main_context_t));
 	gyroscope		= ceigen_new_matrix		(3U, 1U);
@@ -265,7 +269,6 @@ void app_main(void) {
 	euler_angles	= ceigen_new_matrix		(3U, 1U);
 	rotation_matrix	= ceigen_new_matrix		(3U, 3U);
 	quaternion		= ceigen_new_quaternion	();
-	ned_to_enu		= ceigen_new_quaternion	();
 
 	ESP_GOTO_ON_FALSE(main_context		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create main context.");
 	ESP_GOTO_ON_FALSE(gyroscope			!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create gyroscope vector.");
@@ -275,13 +278,7 @@ void app_main(void) {
 	ESP_GOTO_ON_FALSE(euler_angles		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create euler angles vector.");
 	ESP_GOTO_ON_FALSE(rotation_matrix	!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create rotation matrix.");
 	ESP_GOTO_ON_FALSE(quaternion		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create quaternion.");
-	ESP_GOTO_ON_FALSE(ned_to_enu		!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create coordinate system conversion quaternion.");
 	ESP_GOTO_ON_FALSE(fusion_context	!= NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create fusion context.");
-
-	ceigen_set_quaternion_w(ned_to_enu, 0);
-	ceigen_set_quaternion_x(ned_to_enu, M_SQRT1_2);
-	ceigen_set_quaternion_y(ned_to_enu, M_SQRT1_2);
-	ceigen_set_quaternion_w(ned_to_enu, 0);
 
 	const slime_sensor_callbacks_config_t sensor_callbacks = {
 		.timestamp_callback		= NULL,
@@ -366,7 +363,27 @@ void app_main(void) {
 	vTaskDelay(pdMS_TO_TICKS(2000U));
 
 	while (true) {
-		if ((loop_frame ++) % 5U == 0U) {
+		// Update the 9D quaternion in main context.
+		slime_fusion_get_orientation(
+			/* fusion_context			= */ main_context->fusion_context,
+			/* quaternion_enu_6D_out	= */ NULL,
+			/* quaternion_enu_9D_out	= */ main_context->quaternion
+		);
+
+		// Update the quaternion to the network context.
+		slime_network_update_quaternion(network_context, main_context->quaternion);
+
+		uint8_t mag_disturbed = false;
+		uint8_t rest_detected = false;
+
+		// Get the state of the fusion.
+		slime_fusion_get_state(
+			/* fusion_context		= */	main_context->fusion_context,
+			/* mag_disturbed_out	= */ &	mag_disturbed,
+			/* rest_detected_out	= */ &	rest_detected
+		);
+
+		if ((loop_frame ++) % 10U == 0U) {
 			uint8_t connected = false;
 
 			ESP_GOTO_ON_ERROR(slime_wifi_is_connected(wifi_context, &connected), error, TAG, "Failed to get connection state.");
@@ -398,13 +415,6 @@ void app_main(void) {
 					/* PRIu32			= */ ((magneto_context->sample_container->sample_norm_count * 100U) / (45U * 50U))
 				);
 			} else {
-				// Update the 9D quaternion in main context.
-				slime_fusion_get_orientation(
-					/* fusion_context			= */ main_context->fusion_context,
-					/* quaternion_ned_6D_out	= */ NULL,
-					/* quaternion_ned_9D_out	= */ main_context->quaternion
-				);
-
 				// Convert the quaternion to rotation matrix.
 				ceigen_quaternion_to_rotation_matrix(
 					/* source_quaternion	= */ main_context->quaternion,
@@ -446,7 +456,7 @@ void app_main(void) {
 
 				slime_screen_draw_string_fmt(
 					/* screen_context	= */ screen_context,
-					/* text_style		= */ connected ? &text_style_green : &text_style_yellow,
+					/* text_style		= */ connected ? (mag_disturbed ? &text_style_yellow : &text_style_green) : &text_style_red,
 					/* position_x		= */ 5,
 					/* position_y		= */ 0,
 					/* string			= */ "Y: %.2f\nP: %.2f\nR: %.2f",
@@ -481,6 +491,8 @@ void app_main(void) {
 		}
 
 		ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(slime_sensor_poll_fifo(sensor_context)), error, TAG, "Failed to poll FIFO data of the sensor context.");
+
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 
 	error:

@@ -15,7 +15,9 @@ extern "C" {
  * @brief The configuration struct of the LCD context.
  */
 typedef struct {
+	spi_host_device_t				spi_host_id;			/*!< The host ID of the SPI bus of the LCD. */
 	spi_bus_config_t				spi_bus_config;			/*!< The SPI bus configuration of the LCD. */
+	spi_dma_chan_t					spi_dma_channel;		/*!< The DMA channel of the SPI bus of the LCD. */
 	esp_lcd_panel_io_spi_config_t	panel_io_spi_config;	/*!< The SPI panel IO configuration of the LCD. */
 	esp_lcd_panel_dev_config_t		panel_device_config;	/*!< The configuration of the panel device of the LCD. */
 	uint32_t						gap_offset_x;			/*!< The vendor specific gap offset X in pixels of the LCD. */
@@ -26,9 +28,9 @@ typedef struct {
  * @brief The LCD context struct.
  */
 typedef struct {
-			esp_lcd_panel_io_handle_t	panel_io_handle;	/*!< The panel IO handle of the LCD. */
-			esp_lcd_panel_handle_t		panel_handle;		/*!< The panel handle of the LCD. */
-	const	slime_gpio_context_t*		gpio_context;		/*!< The GPIO context for backlight control of the LCD. */
+			esp_lcd_panel_io_handle_t	spi_io_handle;	/*!< The panel IO handle of the LCD. */
+			esp_lcd_panel_handle_t		panel_handle;	/*!< The panel handle of the LCD. */
+	const	slime_gpio_context_t*		gpio_context;	/*!< The GPIO context for backlight control of the LCD. */
 } slime_lcd_context_t;
 
 /**

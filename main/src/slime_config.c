@@ -83,6 +83,37 @@ static const slime_lsm6dsv_qmc6309_sensor_context_config_t slime_lsm6dsv_qmc6309
 	}
 };
 
+/**
+ * @brief The internal parameters of the VQF fusion.
+ */
+static const vqf_params_t vqf_params = {
+	.tau_acc							= 3.0f,
+	.tau_mag							= 3.0f,
+	.motion_bias_est_enabled			= true,
+	.rest_bias_est_enabled				= true,
+	.mag_dist_rejection_enabled			= false,
+	.bias_sigma_init					= 0.5f,
+	.bias_forgetting_time				= 100.0f,
+	.bias_clip							= 2.0f,
+	.bias_sigma_motion					= 0.1f,
+	.bias_vertical_forgetting_factor	= 0.0001f,
+	.bias_sigma_rest					= 0.03f,
+	.rest_min_t							= 1.5f,
+	.rest_filter_tau					= 0.5f,
+	.rest_th_gyr						= 2.0f,
+	.rest_th_acc						= 0.5f,
+	.mag_current_tau					= 0.05f,
+	.mag_ref_tau						= 20.0f,
+	.mag_nrm_th							= 0.1f,
+	.mag_dip_th							= 10.0f,
+	.mag_new_time						= 20.0f,
+	.mag_new_first_time					= 5.0f,
+	.mag_new_min_gyr					= 20.0f,
+	.mag_min_undisturbed_time			= 0.5f,
+	.mag_max_rejection_time				= 60.0f,
+	.mag_rejection_factor				= 2.0f
+};
+
 const slime_nvs_context_config_t nvs_context_config = {
 	.partition = CONFIG_SLIME_NVS_PARTITION, /*!< Configurable NVS partition name. */
 	.namespace = CONFIG_SLIME_NVS_NAMESPACE, /*!< Configurable NVS namespace. */
@@ -158,6 +189,7 @@ const slime_i2c_context_config_t i2c_context_config = {
 };
 
 const slime_lcd_context_config_t lcd_context_config = {
+	.spi_host_id = SPI2_HOST, /*!< We choose SPI2 to communicate with the LCD. */
 	.spi_bus_config = {																	/*!< The configuration of the SPI Bus. */
 		.mosi_io_num		= CONFIG_SLIME_SPI_BUS_MOSI,								/*!< Configurable MOSI GPIO Num. */
 		.sclk_io_num		= CONFIG_SLIME_SPI_BUS_SCLK,								/*!< Configurable SCLK GPIO Num. */
@@ -167,6 +199,7 @@ const slime_lcd_context_config_t lcd_context_config = {
 		.max_transfer_sz	= CONFIG_SLIME_SPI_BUS_MAX_TRANSFER_SZ,						/*!< Configurable maximum transfer size in bytes. */
 		.flags				= SPICOMMON_BUSFLAG_MASTER | SPICOMMON_BUSFLAG_IOMUX_PINS,	/*!< Make sure the SPI Bus in master mode and uses IO mux rather than GPIO matrix. */
 	},
+	.spi_dma_channel = SPI_DMA_CH_AUTO, /*!< Let SPI bus select its DMA channel. */
 	.panel_io_spi_config = {									/*!< The configuration of the ESP LCD panel SPI IO handle. */
 		.cs_gpio_num		= GPIO_NUM_NC,						/*!< We don't need CS because we have only one device attached to the bus. */
 		.dc_gpio_num		= CONFIG_SLIME_LCD_DC,				/*!< Configurable DC GPIO Num. */
@@ -191,7 +224,8 @@ const slime_screen_context_config_t screen_context_config = {
 		.transmit_framerate	= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_FRAMERATE,		/*!< Configurable framerate of the transmission task. */
 		.task_core_id		= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_CORE_ID,		/*!< Configurable core ID of the transmission task. */
 		.task_stack_depth	= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_STACK_DEPTH,	/*!< Configurable stack depth of the transmission task. */
-		.task_priority		= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_PRIORITY		/*!< Configurable priority of the transmission task. */
+		.task_priority		= CONFIG_SLIME_SCREEN_TRANSMIT_TASK_PRIORITY,		/*!< Configurable priority of the transmission task. */
+		.task_name			= "slime_screen_transmission_task"					/*!< The name of the transmission task. */
 	},
 	.fast_lcd_panel_config = {							/*!< The configuration of the fast LCD panel */
 		.frame_size_x			= 96U,					/*!< Set the width of the screen to the width of the LCD panel in pixels. */
@@ -317,20 +351,44 @@ const slime_sensor_context_type_t slime_sensor_context_type_table[8] = {
 	}
 };
 
-extern const slime_fusion_context_type_t slime_fusion_context_type_table[1] = {
-	{																	/*!< The fusion context type of VQF. */
-		.fusion_context_new = slime_vqf_fusion_context_new,				/*!< The fusion context creation function handle of VQF fusion context. */
-		.ned_to_fusion_quaternion = {									/*!< The coefficients of quaternion to convert vector in NED frame to ENU frame. */
-			0.0f,														/*!< W = 0.0f. */
-			M_SQRT1_2,													/*!< X = sqrt(2.0f) / 2.0f. */
-			M_SQRT1_2,													/*!< Y = sqrt(2.0f) / 2.0f. */
-			0.0f														/*!< Z = 0.0f. */
+const slime_fusion_context_type_t slime_fusion_context_type_table[1] = {
+	{														/*!< The fusion context type of VQF. */
+		.fusion_context_new = slime_vqf_fusion_context_new,	/*!< The fusion context creation function handle of VQF fusion context. */
+		.enu_to_fusion_quaternion = {	/*!< VQF is already ENU frame. */
+			1.0f,						/*!< W = 1.0f. */
+			0.0f,						/*!< X = 0.0f. */
+			0.0f,						/*!< Y = 0.0f. */
+			0.0f						/*!< Z = 0.0f. */
 		},
-		.gyroscope_ned_to_fusion_scale		= 0.00001745329251994330f,	/*!< Scale factor to scale mdps to rad/s. */
-		.accelerometer_ned_to_fusion_scale	= 0.00980665f,				/*!< Scale factor to scale mg to m/s^2. */
-		.magnetometer_ned_to_fusion_scale	= 1.0f,						/*!< VQF support magnetometer measurement in arbitrary units. */
-		.timestamp_ned_to_fusion_scale		= 0.0f,						/*!< VQF does not require timestamp. */
+		.gyroscope_mdps_to_fusion_scale		= 0.00001745329251994330f,	/*!< Scale factor to scale mdps to rad/s. */
+		.accelerometer_mg_to_fusion_scale	= 0.00980665f,				/*!< Scale factor to scale mg to m/s^2. */
+		.magnetometer_gauss_to_fusion_scale	= 1.0f,						/*!< VQF support magnetometer measurement in arbitrary units. */
+		.timestamp_seconds_to_fusion_scale	= 0.0f,						/*!< VQF does not require timestamp. */
 		.name								= "VQF",					/*!< The name of the VQF fusion. */
-		.config								= &vqf_params_default		/*!< Use default VQF parameters. */
+		.config								= &vqf_params				/*!< Use default VQF parameters. */
+	}
+};
+
+const slime_network_context_config_t network_context_config = {
+	.network_tick_config = {											/*!< The network tick context configuration. */
+		.socket_context_config.bind_address = {							/*!< The bind address of the UDP context configuration. */
+			.addr = INADDR_ANY,											/*!< Bind to local address. */
+			.port = htons(CONFIG_SLIME_NETWORK_TICK_UDP_SOCKET_PORT),	/*!< Configurable port of the UDP socket. */
+		},
+		.buffer_context_config = {								/*!< The IO context configuration of the network tick context. */
+			.length	= CONFIG_SLIME_NETWORK_TICK_BUFFER_SIZE,	/*!< Configurable size of the buffer to send or receive the packet. */
+			.flags	= MALLOC_CAP_DEFAULT,						/*!< We don't need extra heap capabilities. */
+		},
+		.handshake_packet_period	= CONFIG_SLIME_NETWORK_TICK_HANDSHAKE_PACKET_PERIOD,	/*!< Configurable handshake packet sending period of the network tick. */
+		.info_packet_period			= CONFIG_SLIME_NETWORK_TICK_INFO_PACKET_PERIOD,			/*!< Configurable config packet sending period of the network tick. */
+		.keep_alive_period			= CONFIG_SLIME_NETWORK_TICK_KEEP_ALIVE_PERIOD,			/*!< Configurable keep alive period of the network tick if no server packet received. */
+		.loop_period				= CONFIG_SLIME_NETWORK_TICK_TASK_LOOP_PERIOD,			/*!< Configurable loop cooldown period of the network tick when error occurred. */
+		.tick_rate					= CONFIG_SLIME_NETWORK_TICK_TASK_TICK_RATE				/*!< Configurable tick rate of the network tick. */
+	},
+	.network_tick_task_config = {											/*!< The network tick task configuration. */
+		.task_core_id		= CONFIG_SLIME_NETWORK_TICK_TASK_CORE_ID,		/*!< Configurable core ID of the network task. */
+		.task_stack_depth	= CONFIG_SLIME_NETWORK_TICK_TASK_STACK_DEPTH,	/*!< Configurable stack depth of the network task. */
+		.task_priority		= CONFIG_SLIME_NETWORK_TICK_TASK_PRIORITY,		/*!< Configurable priority of the network task. */
+		.task_name			= "slime_network_udp_task"						/*!< The name of the network task. */
 	}
 };

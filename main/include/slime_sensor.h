@@ -17,68 +17,60 @@ extern "C" {
 typedef struct slime_sensor_context slime_sensor_context_t;
 
 /**
- * Frame convention in X-Y-Z:
- *
- * Body frame: FRD
- *  - X is Forward (Logo side).
- *  - Y is Right (Opposite side of the Type-C charging port side).
- *  - Z is down (Opposite side of the switch side).
- *
- * Nav frame: NED
- *  - X is facing towards North.
- *  - Y is facing towards East.
- *  - Z is facing towards the ground.
+ * Frame convention in X-Y-Z: ENU
+ * - X is facing towards East (Type-C charging port side).
+ * - Y is facing towards North (Switch side).
+ * - Z is facing towards the sky (Logo side).
  *
  * Angular rate:
  *  When the positive direction of an axis faces towards you, the observed positive rotation of the axis is CCW (counter-clockwise).
  */
 
-
 /**
  * @brief						Handle type of the function that will be invoked when the sensor receives new gyroscope data.
  * @param sensor_context		The sensor context that receives the gyroscope data.
- * @param gyroscope_mdps_frd_x	The angular speed of the X axis in millidegree(s)-per-second in FRD body frame of the received gyroscope data.
- * @param gyroscope_mdps_frd_y	The angular speed of the Y axis in millidegree(s)-per-second in FRD body frame of the received gyroscope data.
- * @param gyroscope_mdps_frd_z	The angular speed of the Z axis in millidegree(s)-per-second in FRD body frame of the received gyroscope data.
+ * @param gyroscope_mdps_enu_x	The angular speed of the X axis in millidegree(s)-per-second in ENU frame of the received gyroscope data.
+ * @param gyroscope_mdps_enu_y	The angular speed of the Y axis in millidegree(s)-per-second in ENU frame of the received gyroscope data.
+ * @param gyroscope_mdps_enu_z	The angular speed of the Z axis in millidegree(s)-per-second in ENU frame of the received gyroscope data.
  * @param user_context			Custom used-defined handle.
  */
 typedef void (*slime_sensor_gyroscope_callback_t)(
 	const	slime_sensor_context_t*	sensor_context,
-			float_t					gyroscope_mdps_frd_x,
-			float_t					gyroscope_mdps_frd_y,
-			float_t					gyroscope_mdps_frd_z,
+			float_t					gyroscope_mdps_enu_x,
+			float_t					gyroscope_mdps_enu_y,
+			float_t					gyroscope_mdps_enu_z,
 			void*					user_context
 );
 
 /**
  * @brief							Handle type of the function that will be invoked when the sensor receives new accelerometer data.
  * @param sensor_context			The sensor context that receives the accelerometer data.
- * @param accelerometer_mg_frd_x	The gravity of the X axis in milli standard gravity (about 0.00980665 m/s^2) in FRD body frame of the received accelerometer data.
- * @param accelerometer_mg_frd_y	The gravity of the Y axis in milli standard gravity (about 0.00980665 m/s^2) in FRD body frame of the received accelerometer data.
- * @param accelerometer_mg_frd_z	The gravity of the Z axis in milli standard gravity (about 0.00980665 m/s^2) in FRD body frame of the received accelerometer data.
+ * @param accelerometer_mg_enu_x	The gravity of the X axis in milli standard gravity (about 0.00980665 m/s^2) in ENU frame of the received accelerometer data.
+ * @param accelerometer_mg_enu_y	The gravity of the Y axis in milli standard gravity (about 0.00980665 m/s^2) in ENU frame of the received accelerometer data.
+ * @param accelerometer_mg_enu_z	The gravity of the Z axis in milli standard gravity (about 0.00980665 m/s^2) in ENU frame of the received accelerometer data.
  * @param user_context				Custom used-defined handle.
  */
 typedef void (*slime_sensor_accelerometer_callback_t)(
 	const	slime_sensor_context_t*	sensor_context,
-			float_t					accelerometer_mg_frd_x,
-			float_t					accelerometer_mg_frd_y,
-			float_t					accelerometer_mg_frd_z,
+			float_t					accelerometer_mg_enu_x,
+			float_t					accelerometer_mg_enu_y,
+			float_t					accelerometer_mg_enu_z,
 			void*					user_context
 );
 
 /**
  * @brief							Handle type of the function that will be invoked when the sensor receives new magnetometer data.
  * @param sensor_context			The sensor context that receives the magnetometer data.
- * @param magnetometer_gauss_frd_x	The magnetic flux density of the X axis in gauss in FRD body frame of the received magnetometer data.
- * @param magnetometer_gauss_frd_y	The magnetic flux density of the Y axis in gauss in FRD body frame of the received magnetometer data.
- * @param magnetometer_gauss_frd_z	The magnetic flux density of the Z axis in gauss in FRD body frame of the received magnetometer data.
+ * @param magnetometer_gauss_enu_x	The magnetic flux density of the X axis in gauss in ENU frame of the received magnetometer data.
+ * @param magnetometer_gauss_enu_y	The magnetic flux density of the Y axis in gauss in ENU frame of the received magnetometer data.
+ * @param magnetometer_gauss_enu_z	The magnetic flux density of the Z axis in gauss in ENU frame of the received magnetometer data.
  * @param user_context				Custom used-defined handle.
  */
 typedef void (*slime_sensor_magnetometer_callback_t)(
 	const	slime_sensor_context_t*	sensor_context,
-			float_t					magnetometer_gauss_frd_x,
-			float_t					magnetometer_gauss_frd_y,
-			float_t					magnetometer_gauss_frd_z,
+			float_t					magnetometer_gauss_enu_x,
+			float_t					magnetometer_gauss_enu_y,
+			float_t					magnetometer_gauss_enu_z,
 			void*					user_context
 );
 

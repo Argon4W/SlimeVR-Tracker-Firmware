@@ -38,6 +38,77 @@ menu "SlimeVR Tracker Firmware Configuration"
 
 	endmenu
 
+	menu "Network Configuration"
+
+		config SLIME_NETWORK_TICK_UDP_SOCKET_PORT
+			int "Network Tick UDP Socket Port"
+			default 6969
+			help
+				Port of the UDP socket of the network tick.
+
+		config SLIME_NETWORK_TICK_BUFFER_SIZE
+			int "Network Tick Buffer Size"
+			default 512
+			help
+				Size of the buffer of the network tick to send or receive the packet.
+
+		config SLIME_NETWORK_TICK_HANDSHAKE_PACKET_PERIOD
+			int "Network Tick Handshake Packet Period"
+			default 1000
+			help
+				Handshake packet sending period of the network tick in milliseconds.
+
+		config SLIME_NETWORK_TICK_INFO_PACKET_PERIOD
+			int "Network Tick Info Packet Period"
+			default 1000
+			help
+				Info packet sending period of the network tick in milliseconds.
+
+		config SLIME_NETWORK_TICK_KEEP_ALIVE_PERIOD
+			int "Network Tick Keep Alive Period"
+			default 3000
+			help
+				Keep alive period of the network tick if no server packet received in milliseconds.
+
+		config SLIME_NETWORK_TICK_TASK_LOOP_PERIOD
+			int "Network Tick Task Loop Period"
+			default 2000
+			help
+				Tick loop cooldown time of the network tick task when error occurred in milliseconds.
+
+		config SLIME_NETWORK_TICK_TASK_TICK_RATE
+			int "Network Tick Task Tick Rate"
+			default 500
+			help
+				Tick rate of the network tick task in TPS (ticks-per-second).
+
+		config SLIME_NETWORK_TICK_TASK_CORE_ID
+			int "Network Tick Task CPU Core ID"
+			default 1
+			help
+				The ID of the core running the network tick task.
+
+		config SLIME_NETWORK_TICK_TASK_STACK_DEPTH
+			int "Network Tick Task Stack Depth"
+			default 4096
+			help
+				The stack depth of the network tick task.
+
+		config SLIME_NETWORK_TICK_TASK_PRIORITY
+			int "Network Tick Task Priority"
+			default 2
+			help
+				The priority of the network tick task.
+
+		config SLIME_NETWORK_DEBUG_LOGGING
+			bool "Enable Network Debug Logging"
+			default n
+			depends on SLIME_DEBUG_LOGGING
+			help
+				Enable this option will enable the output of network debug logging.
+
+	endmenu
+
 	menu "NVS Configuration"
 
 		config SLIME_NVS_PARTITION

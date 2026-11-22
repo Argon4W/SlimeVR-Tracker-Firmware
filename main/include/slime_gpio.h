@@ -36,10 +36,7 @@ typedef struct {
  * @param gpio_level	The output level of the LED GPIO ("1" = high; "0" = low).
  * @return				The status of setting the output level.
  */
-esp_err_t slime_gpio_led_set_level(
-	const	slime_gpio_context_t*	gpio_context,
-			uint8_t					gpio_level
-);
+esp_err_t slime_gpio_led_set_level(const slime_gpio_context_t* gpio_context, uint8_t gpio_level);
 
 /**
  * @brief				Setting the output level of the Backlight GPIO.
@@ -47,10 +44,7 @@ esp_err_t slime_gpio_led_set_level(
  * @param gpio_level	The output level of the Backlight GPIO ("1" = high; "0" = low).
  * @return				The status of setting the output level.
  */
-esp_err_t slime_gpio_backlight_set_level(
-	const	slime_gpio_context_t*	gpio_context,
-			uint8_t					gpio_level
-);
+esp_err_t slime_gpio_backlight_set_level(const slime_gpio_context_t* gpio_context, uint8_t gpio_level);
 
 /**
  * @brief					Setting the output level of the Backlight GPIO.
@@ -58,10 +52,7 @@ esp_err_t slime_gpio_backlight_set_level(
  * @param sensor_board_id	The handle to receive the sensor board ID.
  * @return					The status of getting sensor board ID.
  */
-esp_err_t slime_gpio_get_sensor_board_id(
-	const	slime_gpio_context_t*	gpio_context,
-			uint8_t*				sensor_board_id
-);
+esp_err_t slime_gpio_get_sensor_board_id(const slime_gpio_context_t* gpio_context, uint8_t* sensor_board_id);
 
 /**
  * @brief						Create the GPIO context.
@@ -69,10 +60,7 @@ esp_err_t slime_gpio_get_sensor_board_id(
  * @param gpio_context_config	The configuration of the GPIO context.
  * @return						The status of the creation.
  */
-esp_err_t slime_gpio_context_new(
-			slime_gpio_context_t**			gpio_context_out,
-	const	slime_gpio_context_config_t*	gpio_context_config
-);
+esp_err_t slime_gpio_context_new(slime_gpio_context_t** gpio_context_out, const slime_gpio_context_config_t* gpio_context_config);
 
 /**
  * @brief					Release the GPIO context.

@@ -24,7 +24,7 @@ typedef struct {
  * @brief The Wi-Fi context struct.
  */
 typedef struct {
-	EventGroupHandle_t	event_group;				/*!< The event group of the Wi-Fi context. */
+	EventGroupHandle_t	wifi_events;				/*!< The event group of the Wi-Fi context. */
 	SemaphoreHandle_t	credential_lock;			/*!< The semaphore mutex lock of the credential. */
 	esp_netif_t*		network_interface;			/*!< The TCP/IP network interface of the Wi-Fi context. */
 	uint8_t				credential_retry_count_max;	/*!< The maximum retry count allowed before stop reconnecting. */
@@ -36,14 +36,14 @@ typedef struct {
 /**
  * @brief					Dynamically connect the Wi-Fi context to the AP of given credential.
  * @param wifi_context		The Wi-Fi context to connect to given credential.
- * @param cred_ssid			The SSID of the AP credential.
- * @param cred_pass			The password of the AP credential.
+ * @param credential_ssid	The SSID of the AP credential.
+ * @param credential_pass	The password of the AP credential.
  * @return					The status of connecting.
  */
 esp_err_t slime_wifi_connect(
 			slime_wifi_context_t*	wifi_context,
-	const	char*					cred_ssid,
-	const	char*					cred_pass
+	const	char*					credential_ssid,
+	const	char*					credential_pass
 );
 
 /**
@@ -52,17 +52,31 @@ esp_err_t slime_wifi_connect(
  * @param wifi_connected_out	The handle to receive the connection state.
  * @return						The status of getting connection state.
  */
-esp_err_t slime_wifi_is_connected(
-	const	slime_wifi_context_t*	wifi_context,
-			uint8_t*				wifi_connected_out
-);
+esp_err_t slime_wifi_is_connected(const slime_wifi_context_t* wifi_context, uint8_t* wifi_connected_out);
 
 /**
  * @brief				Wait until the Wi-Fi context is connected.
  * @param wifi_context	The Wi-Fi context wait for.
+ * @param timeout_ticks	Timeout in FreeRTOS ticks.
  * @return				The status of waiting.
  */
-esp_err_t slime_wifi_wait_connected(const slime_wifi_context_t* wifi_context);
+esp_err_t slime_wifi_wait_connected(const slime_wifi_context_t* wifi_context, uint32_t timeout_ticks);
+
+/**
+ * @brief					Get the mac address of the Wi-Fi context.
+ * @param wifi_context		The Wi-Fi context to get the mac address.
+ * @param mac_address_out	The handle to receive the mac address.
+ * @return					The status of getting mac address.
+ */
+esp_err_t slime_wifi_get_mac_address(const slime_wifi_context_t* wifi_context, uint8_t* mac_address_out);
+
+/**
+ * @brief				Get the RSSI of the Wi-Fi context.
+ * @param wifi_context	The Wi-Fi context to get the RSSI.
+ * @param rssi_out		The handle to receive the RSSI.
+ * @return				The status of getting RSSI.
+ */
+esp_err_t slime_wifi_get_rssi(const slime_wifi_context_t* wifi_context, uint8_t* rssi_out);
 
 /**
  * @brief						Create the Wi-Fi context.
@@ -70,10 +84,7 @@ esp_err_t slime_wifi_wait_connected(const slime_wifi_context_t* wifi_context);
  * @param wifi_context_config	The configuration of the Wi-Fi context.
  * @return						The status of the creation.
  */
-esp_err_t slime_wifi_context_new(
-			slime_wifi_context_t**			wifi_context_out,
-	const	slime_wifi_context_config_t*	wifi_context_config
-);
+esp_err_t slime_wifi_context_new(slime_wifi_context_t** wifi_context_out, const slime_wifi_context_config_t* wifi_context_config);
 
 /**
  * @brief					Release the Wi-Fi context.

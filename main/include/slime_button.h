@@ -79,10 +79,7 @@ slime_button_type_t slime_button_poll_event(slime_button_context_t* button_conte
  * @param button_context_config	The configuration of the button context.
  * @return						The status of the creation.
  */
-esp_err_t slime_button_context_new(
-			slime_button_context_t**		button_context_out,
-	const	slime_button_context_config_t*	button_context_config
-);
+esp_err_t slime_button_context_new(slime_button_context_t** button_context_out, const slime_button_context_config_t* button_context_config);
 
 /**
  * @brief					Release the button context.

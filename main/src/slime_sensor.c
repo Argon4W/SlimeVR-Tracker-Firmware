@@ -8,6 +8,25 @@
  */
 static const char* TAG = "slime_sensor";
 
+/**
+ * @brief The definition of the debug logging function of the Slime Sensor
+ */
+#ifdef CONFIG_SLIME_DEBUG_LOGGING
+/**
+ * @brief			Log the format string.
+ * @param format	The format string to be logged.
+ * @param ...		Optional arguments to be formatted according to the format string.
+ */
+#define SLIME_SENSOR_LOG(format, ...) ESP_LOGD(TAG, format, ##__VA_ARGS__)
+#else
+/**
+ * @brief			Log the format string (Inactive).
+ * @param format	The format string to be logged.
+ * @param ...		Optional arguments to be formatted according to the format string.
+ */
+#define SLIME_SENSOR_LOG(format, ...)
+#endif // CONFIG_SLIME_DEBUG_LOGGING
+
 esp_err_t slime_sensor_register_callbacks(
 			slime_sensor_context_t*				sensor_context,
 	const	slime_sensor_callbacks_config_t*	sensor_callbacks,
@@ -17,10 +36,8 @@ esp_err_t slime_sensor_register_callbacks(
 	ESP_RETURN_ON_FALSE(sensor_context		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_sensor_context_t handle provided when performing registering callbacks.");
 	ESP_RETURN_ON_FALSE(sensor_callbacks	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_sensor_callbacks_config_t handle provided when performing registering callbacks.");
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Sensor context \"%s\" is trying registering callbacks.", sensor_context->name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_SENSOR_LOG("Sensor context \"%s\" is trying registering callbacks.", sensor_context->name);
 
 	// Register the callback using the function handle in the sensor context if it exists.
 	if (sensor_context->register_callbacks) {
@@ -47,10 +64,8 @@ esp_err_t slime_sensor_get_sample_time(
 	ESP_RETURN_ON_FALSE(accelerometer_sample_time_ms	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No handle provided to received the accelerometer sample time when performing getting sample times.");
 	ESP_RETURN_ON_FALSE(magnetometer_sample_time_ms		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No handle provided to received the magnetometer sample time when performing getting sample times.");
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Sensor context \"%s\" is trying getting sample times.", sensor_context->name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_SENSOR_LOG("Sensor context \"%s\" is trying getting sample times.", sensor_context->name);
 
 	// Get the sample times using the function handle in the sensor context if it exists.
 	if (sensor_context->get_sample_time) {
@@ -78,10 +93,8 @@ slime_sensor_error_t slime_sensor_poll_fifo(slime_sensor_context_t* sensor_conte
 	// We cannot proceed without a context.
 	ESP_GOTO_ON_FALSE(sensor_context != NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_t handle provided when performing polling FIFO data.");
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Sensor context \"%s\" is trying polling FIFO data.", sensor_context->name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_SENSOR_LOG("Sensor context \"%s\" is trying polling FIFO data.", sensor_context->name);
 
 	// Poll the FIFO data using the function handle in the sensor context if it exists.
 	if (sensor_context->poll_fifo) {
@@ -106,28 +119,20 @@ slime_sensor_error_t slime_sensor_context_new(
 	esp_err_t				ret;
 
 	// We cannot proceed without a sensor type table, a GPIO context, an I2C context, and a handle to receive the created sensor context.
+	ESP_GOTO_ON_FALSE(sensor_context_out		!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_t handle provided when creating sensor context.");
 	ESP_GOTO_ON_FALSE(sensor_context_type_table	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_type_t table handle provided when creating sensor context.");
-	ESP_GOTO_ON_FALSE(sensor_context_out		!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No sensor_context_out handle provided to received the created sensor context when creating sensor context.");
 	ESP_GOTO_ON_FALSE(gpio_context				!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No gpio_context handle provided when creating sensor context.");
 	ESP_GOTO_ON_FALSE(i2c_context				!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_gpio_context_t handle provided when creating sensor context.");
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Creating sensor context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
-
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Reserving sensor board ID of the sensor type.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_SENSOR_LOG("Creating sensor context.");
+	SLIME_SENSOR_LOG("Reserving sensor board ID of the sensor type.");
 
 	// Reserve the space for sensor board ID.
 	uint8_t sensor_board_id;
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Getting sensor board ID from GPIO context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_SENSOR_LOG("Getting sensor board ID from GPIO context.");
 
 	// Get the sensor board ID from the GPIO context.
 	ESP_GOTO_ON_ERROR(slime_gpio_get_sensor_board_id(
@@ -138,10 +143,8 @@ slime_sensor_error_t slime_sensor_context_new(
 	// Check the range of the sensor board ID.
 	ESP_GOTO_ON_FALSE(sensor_board_id < 8U, ESP_ERR_INVALID_STATE, error_host, TAG, "Sensor board ID must be smaller than 8");
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Mapping sensor board ID to sensor context type.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_SENSOR_LOG("Mapping sensor board ID to sensor context type.");
 
 	// Get the sensor context type struct handle of the corresponding sensor board ID.
 	const slime_sensor_context_type_t* sensor_context_type = &sensor_context_type_table[sensor_board_id];
@@ -149,10 +152,8 @@ slime_sensor_error_t slime_sensor_context_new(
 	// Check the sensor context type.
 	ESP_GOTO_ON_FALSE(sensor_context_type != NULL, ESP_ERR_NOT_FOUND, error_host, TAG, "Failed to get a sensor context type from the sensor context type table.");
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Creating sensor context of the sensor context type.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_SENSOR_LOG("Creating sensor context of the sensor context type.");
 
 	// Create the sensor context of the sensor context type.
 	ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(sensor_context_type->sensor_context_new(
@@ -174,10 +175,8 @@ esp_err_t slime_sensor_context_del(slime_sensor_context_t* sensor_context_in) {
 	// We cannot proceed without a context.
 	ESP_RETURN_ON_FALSE(sensor_context_in != NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_sensor_context_t handle provided when releasing sensor context.");
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Releasing sensor context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_SENSOR_LOG("Releasing sensor context.");
 
 	// Release the sensor context using its own delete function handle.
 	// A sensor context must have a delete function, so no null-check here.

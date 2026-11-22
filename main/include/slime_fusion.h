@@ -33,31 +33,31 @@ typedef struct {
 	);
 
 	/**
-	 * @brief		The coefficients of the quaternion to rotate an NED frame vector to a fusion frame vector.
-	 * @attention	the coefficients are stored in W-X-Y-Z order. ned_to_fusion_quaternion[0] = W. The quaternion must
+	 * @brief		The coefficients of the quaternion to rotate an ENU frame vector to a fusion frame vector.
+	 * @attention	the coefficients are stored in W-X-Y-Z order. enu_to_fusion_quaternion[0] = W. The quaternion must
 	 *				be a unit quaternion.
 	 */
-	float_t ned_to_fusion_quaternion[4];
+	float_t enu_to_fusion_quaternion[4];
 
 	/**
 	 * @brief The scale factor to scale the gyroscope input in mdps to gyroscope input in fusion unit.
 	 */
-	float_t gyroscope_ned_to_fusion_scale;
+	float_t gyroscope_mdps_to_fusion_scale;
 
 	/**
 	 * @brief The scale factor to scale the accelerometer input in mg to accelerometer input in fusion unit.
 	 */
-	float_t accelerometer_ned_to_fusion_scale;
+	float_t accelerometer_mg_to_fusion_scale;
 
 	/**
 	 * @brief The scale factor to scale the magnetometer input in gauss to magnetometer input in fusion unit.
 	 */
-	float_t magnetometer_ned_to_fusion_scale;
+	float_t magnetometer_gauss_to_fusion_scale;
 
 	/**
 	 * @brief The scale factor to scale the timestamp input in seconds to timestamp input in fusion unit.
 	 */
-	float_t timestamp_ned_to_fusion_scale;
+	float_t timestamp_seconds_to_fusion_scale;
 
 	/**
 	 * @brief The name of the type of fusion context.
@@ -77,10 +77,7 @@ struct slime_fusion_context {
 	 * @param gyroscope_fusion	The angular speed in fusion frame and unit.
 	 * @return					The status of the gyroscope update.
 	 */
-	esp_err_t (*update_gyroscope)(
-		slime_fusion_context_t*	fusion_context,
-		ceigen_matrix_handle_t	gyroscope_fusion
-	);
+	esp_err_t (*update_gyroscope)(slime_fusion_context_t* fusion_context, ceigen_matrix_handle_t gyroscope_fusion);
 
 	/**
 	 * @brief						Function to do the accelerometer update of the fusion.
@@ -88,10 +85,7 @@ struct slime_fusion_context {
 	 * @param accelerometer_fusion	The gravity in fusion frame and unit.
 	 * @return						The status of the accelerometer update.
 	 */
-	esp_err_t (*update_accelerometer)(
-		slime_fusion_context_t*	fusion_context,
-		ceigen_matrix_handle_t	accelerometer_fusion
-	);
+	esp_err_t (*update_accelerometer)(slime_fusion_context_t* fusion_context, ceigen_matrix_handle_t accelerometer_fusion);
 
 	/**
 	 * @brief						Function to do the magnetometer update of the fusion.
@@ -99,10 +93,7 @@ struct slime_fusion_context {
 	 * @param magnetometer_fusion	Th magnetic flux density in fusion frame and unit.
 	 * @return						The status of the magnetometer update.
 	 */
-	esp_err_t (*update_magnetometer)(
-		slime_fusion_context_t*	fusion_context,
-		ceigen_matrix_handle_t	magnetometer_fusion
-	);
+	esp_err_t (*update_magnetometer)(slime_fusion_context_t* fusion_context, ceigen_matrix_handle_t magnetometer_fusion);
 
 	/**
 	 * @brief							Function to do the timestamp update of the fusion.
@@ -110,10 +101,7 @@ struct slime_fusion_context {
 	 * @param delta_timestamp_fusion	The timestamp increment in fusion unit.
 	 * @return							The status of the timestamp update.
 	 */
-	esp_err_t (*update_timestamp)(
-		slime_fusion_context_t*	fusion_context,
-		float_t					delta_timestamp_fusion
-	);
+	esp_err_t (*update_timestamp)(slime_fusion_context_t* fusion_context, float_t delta_timestamp_fusion);
 
 	/**
 	 * @brief							Function to get the fused orientations of the fusion.
@@ -160,37 +148,37 @@ struct slime_fusion_context {
 	/**
 	 * @brief The vector to hold the rotated fusion frame vector.
 	 */
-	ceigen_matrix_handle_t ned_to_fusion_vector;
+	ceigen_matrix_handle_t enu_to_fusion_vector;
 
 	/**
-	 * @brief The quaternion to rotate an NED frame vector to a fusion frame vector.
+	 * @brief The quaternion to rotate an ENU frame vector to a fusion frame vector.
 	 */
-	ceigen_quaternion_handle_t ned_to_fusion_quaternion;
+	ceigen_quaternion_handle_t enu_to_fusion_quaternion;
 
 	/**
-	 * @brief The quaternion to rotate a fusion frame vector to an NED frame vector.
+	 * @brief The quaternion to rotate a fusion frame vector to an ENU frame vector.
 	 */
-	ceigen_quaternion_handle_t fusion_to_ned_quaternion;
+	ceigen_quaternion_handle_t fusion_to_enu_quaternion;
 
 	/**
-	 * @brief The scaled rotation matrix to rotate an NED frame gyroscope data to a fusion frame gyroscope data in fusion unit.
+	 * @brief The scaled rotation matrix to rotate an ENU frame gyroscope data in millidegree(s)-per-second to a fusion frame gyroscope data in fusion unit.
 	 */
-	ceigen_matrix_handle_t ned_to_fusion_gyroscope_matrix;
+	ceigen_matrix_handle_t enu_mdps_to_fusion_gyroscope_matrix;
 
 	/**
-	 * @brief The scaled rotation matrix to rotate an NED frame accelerometer data to a fusion frame accelerometer data in fusion unit.
+	 * @brief The scaled rotation matrix to rotate an ENU frame accelerometer data in milli standard gravity to a fusion frame accelerometer data in fusion unit.
 	 */
-	ceigen_matrix_handle_t ned_to_fusion_accelerometer_matrix;
+	ceigen_matrix_handle_t enu_mg_to_fusion_accelerometer_matrix;
 
 	/**
-	 * @brief The scaled rotation matrix to rotate an NED frame magnetometer data to a fusion frame magnetometer data in fusion unit.
+	 * @brief The scaled rotation matrix to rotate an ENU frame magnetometer data in gauss to a fusion frame magnetometer data in fusion unit.
 	 */
-	ceigen_matrix_handle_t ned_to_fusion_magnetometer_matrix;
+	ceigen_matrix_handle_t enu_gauss_to_fusion_magnetometer_matrix;
 
 	/**
 	 * @brief The scale factor to scale the timestamp input in seconds to timestamp input in fusion unit.
 	 */
-	float_t timestamp_ned_to_fusion_scale;
+	float_t timestamp_seconds_to_fusion_scale;
 
 	/**
 	 * @brief The name of the fusion context.
@@ -201,35 +189,26 @@ struct slime_fusion_context {
 /**
  * @brief						Do the gyroscope update of the fusion.
  * @param fusion_context		The fusion context to do the gyroscope update.
- * @param gyroscope_mdps_frd	The angular speed in millidegree(s)-per-second and FRD body frame.
+ * @param gyroscope_mdps_enu	The angular speed in millidegree(s)-per-second and ENU body frame.
  * @return						The status of the gyroscope update.
  */
-esp_err_t slime_fusion_update_gyroscope(
-	slime_fusion_context_t*	fusion_context,
-	ceigen_matrix_handle_t	gyroscope_mdps_frd
-);
+esp_err_t slime_fusion_update_gyroscope(slime_fusion_context_t* fusion_context, ceigen_matrix_handle_t gyroscope_mdps_enu);
 
 /**
  * @brief						Do the accelerometer update of the fusion.
  * @param fusion_context		The fusion context to do the accelerometer update.
- * @param accelerometer_mg_frd	The gravity in milli standard gravity (about 0.00980665 m/s^2) and FRD body frame.
+ * @param accelerometer_mg_enu	The gravity in milli standard gravity (about 0.00980665 m/s^2) and ENU body frame.
  * @return						The status of the accelerometer update.
  */
-esp_err_t slime_fusion_update_accelerometer(
-	slime_fusion_context_t*	fusion_context,
-	ceigen_matrix_handle_t	accelerometer_mg_frd
-);
+esp_err_t slime_fusion_update_accelerometer(slime_fusion_context_t* fusion_context, ceigen_matrix_handle_t accelerometer_mg_enu);
 
 /**
  * @brief							Do the magnetometer update of the fusion.
  * @param fusion_context			The fusion context to do the magnetometer update.
- * @param magnetometer_gauss_frd	The magnetic flux density in gauss and FRD body frame.
+ * @param magnetometer_gauss_enu	The magnetic flux density in gauss and ENU body frame.
  * @return							The status of the magnetometer update.
  */
-esp_err_t slime_fusion_update_magnetometer(
-	slime_fusion_context_t*	fusion_context,
-	ceigen_matrix_handle_t	magnetometer_gauss_frd
-);
+esp_err_t slime_fusion_update_magnetometer(slime_fusion_context_t* fusion_context, ceigen_matrix_handle_t magnetometer_gauss_enu);
 
 /**
  * @brief							Do the timestamp update of the fusion.
@@ -237,23 +216,20 @@ esp_err_t slime_fusion_update_magnetometer(
  * @param delta_timestamp_seconds	The timestamp increment in seconds.
  * @return							The status of the timestamp update.
  */
-esp_err_t slime_fusion_update_timestamp(
-	slime_fusion_context_t*	fusion_context,
-	float_t					delta_timestamp_seconds
-);
+esp_err_t slime_fusion_update_timestamp(slime_fusion_context_t* fusion_context, float_t delta_timestamp_seconds);
 
 /**
  * @brief						Get the fused orientations of the fusion.
  * @attention					Identity quaternions will be returned if the context does not support getting orientations.
  * @param fusion_context		The fusion context to get the fused orientations.
- * @param quaternion_ned_6D_out	The output 6D (gyro+accel) orientation in quaternion form in NED earth frame, can be NULL.
- * @param quaternion_ned_9D_out	The output 9D (gyro+accel+mag) orientation in quaternion form in NED earth frame, can be NULL.
+ * @param quaternion_enu_6D_out	The output 6D (gyro+accel) orientation in quaternion form in ENU earth frame, can be NULL.
+ * @param quaternion_enu_9D_out	The output 9D (gyro+accel+mag) orientation in quaternion form in ENU earth frame, can be NULL.
  * @return						The status of getting fused orientations.
  */
 esp_err_t slime_fusion_get_orientation(
 	const	slime_fusion_context_t*		fusion_context,
-			ceigen_quaternion_handle_t	quaternion_ned_6D_out,
-			ceigen_quaternion_handle_t	quaternion_ned_9D_out
+			ceigen_quaternion_handle_t	quaternion_enu_6D_out,
+			ceigen_quaternion_handle_t	quaternion_enu_9D_out
 );
 
 /**

@@ -8,6 +8,25 @@
 static const char* TAG = "slime_sensor_empty";
 
 /**
+ * @brief The definition of the debug logging function of the Slime Empty Sensor
+ */
+#ifdef CONFIG_SLIME_DEBUG_LOGGING
+/**
+ * @brief			Log the format string.
+ * @param format	The format string to be logged.
+ * @param ...		Optional arguments to be formatted according to the format string.
+ */
+#define SLIME_EMPTY_SENSOR_LOG(format, ...) ESP_LOGD(TAG, format, ##__VA_ARGS__)
+#else
+/**
+ * @brief			Log the format string (Inactive).
+ * @param format	The format string to be logged.
+ * @param ...		Optional arguments to be formatted according to the format string.
+ */
+#define SLIME_EMPTY_SENSOR_LOG(format, ...)
+#endif // CONFIG_SLIME_DEBUG_LOGGING
+
+/**
  * @brief					Release the empty sensor context.
  * @param sensor_context_in The empty sensor context to be released.
  * @return					The status of the releasing.
@@ -26,10 +45,8 @@ slime_sensor_error_t slime_empty_sensor_context_new(
 	ESP_GOTO_ON_FALSE(sensor_context_out	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No sensor_context_out handle provided when creating empty sensor context.");
 	ESP_GOTO_ON_FALSE(sensor_context_name	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No name provided when creating empty sensor context.");
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Creating empty sensor context \"%s\".", sensor_context_name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_EMPTY_SENSOR_LOG("Creating empty sensor context \"%s\".", sensor_context_name);
 
 	// Create the sensor context struct.
 	slime_sensor_context_t* sensor_context = calloc(1U, sizeof(slime_sensor_context_t));
@@ -37,10 +54,8 @@ slime_sensor_error_t slime_empty_sensor_context_new(
 	// Check the allocation.
 	ESP_GOTO_ON_FALSE(sensor_context != NULL, ESP_ERR_NO_MEM, error_host, TAG, "Failed to create sensor context struct for empty sensor context.");
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Finalizing empty sensor context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress
+	SLIME_EMPTY_SENSOR_LOG("Finalizing empty sensor context.");
 
 	// Fill the empty sensor context.
 	sensor_context->name				= sensor_context_name;
@@ -52,10 +67,8 @@ slime_sensor_error_t slime_empty_sensor_context_new(
 	// Return the created empty sensor context.
 	*sensor_context_out = sensor_context;
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Empty sensor context \"%s\" has been created.", sensor_context_name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_EMPTY_SENSOR_LOG("Empty sensor context \"%s\" has been created.", sensor_context_name);
 
 	return SLIME_SENSOR_OK();
 
@@ -70,15 +83,9 @@ esp_err_t slime_empty_sensor_context_del(slime_sensor_context_t* sensor_context_
 	// Reserve the name of the sensor context.
 	const char* name = sensor_context_in->name;
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Releasing empty sensor context \"%s\".", name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
-
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Detaching all fields of the empty sensor context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_EMPTY_SENSOR_LOG("Releasing empty sensor context \"%s\".", name);
+	SLIME_EMPTY_SENSOR_LOG("Detaching all fields of the empty sensor context.");
 
 	// Detach all fields.
 	sensor_context_in->name					= NULL;
@@ -87,18 +94,14 @@ esp_err_t slime_empty_sensor_context_del(slime_sensor_context_t* sensor_context_
 	sensor_context_in->poll_fifo			= NULL;
 	sensor_context_in->delete				= NULL;
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Releasing empty sensor context struct.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_EMPTY_SENSOR_LOG("Releasing empty sensor context struct.");
 
 	// Release the empty sensor context struct.
 	free(sensor_context_in);
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Empty sensor context \"%s\" has been released.", name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_EMPTY_SENSOR_LOG("Empty sensor context \"%s\" has been released.", name);
 
 	return ESP_OK;
 }

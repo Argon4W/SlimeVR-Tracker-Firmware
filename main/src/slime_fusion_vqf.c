@@ -2,9 +2,28 @@
 #include "slime_fusion_vqf.h"
 
 /**
- * @brief The log tag of the Slime VQF fusion context.
+ * @brief The log tag of the Slime VQF Fusion.
  */
 static const char* TAG = "slime_fusion_vqf";
+
+/**
+ * @brief The definition of the debug logging function of the Slime VQF Fusion.
+ */
+#ifdef CONFIG_SLIME_DEBUG_LOGGING
+/**
+ * @brief			Log the format string.
+ * @param format	The format string to be logged.
+ * @param ...		Optional arguments to be formatted according to the format string.
+ */
+#define SLIME_VQF_FUSION_LOG(format, ...) ESP_LOGD(TAG, format, ##__VA_ARGS__)
+#else
+/**
+ * @brief			Log the format string (Inactive).
+ * @param format	The format string to be logged.
+ * @param ...		Optional arguments to be formatted according to the format string.
+ */
+#define SLIME_VQF_FUSION_LOG(format, ...)
+#endif // CONFIG_SLIME_DEBUG_LOGGING
 
 /**
  * @brief The VQF fusion context struct.
@@ -81,10 +100,7 @@ static const vqf_linear_algebra_t slime_vqf_linear_algebra = {
  * @param gyroscope_rad_enu		The angular speed in radian(s)-per-second and ENU frame.
  * @return						The status of the gyroscope update.
  */
-static esp_err_t slime_vqf_fusion_update_gyroscope(
-			slime_fusion_context_t*	fusion_context,
-	const	ceigen_matrix_handle_t	gyroscope_rad_enu
-) {
+static esp_err_t slime_vqf_fusion_update_gyroscope(slime_fusion_context_t* fusion_context, const ceigen_matrix_handle_t gyroscope_rad_enu) {
 	// We cannot proceed without a context and gyroscope data.
 	ESP_RETURN_ON_FALSE(fusion_context		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_fusion_context_t handle provided when performing gyroscope update.");
 	ESP_RETURN_ON_FALSE(gyroscope_rad_enu	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No ceigen_matrix_handle_t handle provided when performing gyroscope update.");
@@ -96,15 +112,13 @@ static esp_err_t slime_vqf_fusion_update_gyroscope(
 		/* field_offset	= */ base
 	);
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "VQF fusion context \"%s\" is trying doing gyroscope update. (%.2f rad/s, %.2f rad/s, %.2f rad/s)",
-			/* s	*/ fusion_context->name,
-			/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_rad_enu, 0U, 0U),
-			/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_rad_enu, 1U, 0U),
-			/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_rad_enu, 2U, 0U)
-		);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_VQF_FUSION_LOG("VQF fusion context \"%s\" is trying doing gyroscope update: x=%.2f rad/s, y=%.2f rad/s, z=%.2f rad/s.",
+		/* s	*/ fusion_context->name,
+		/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_rad_enu, 0U, 0U),
+		/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_rad_enu, 1U, 0U),
+		/* .2f	*/ ceigen_get_matrix_coefficient(gyroscope_rad_enu, 2U, 0U)
+	);
 
 	// Do the gyroscope update.
 	vqf_update_gyr(
@@ -121,10 +135,7 @@ static esp_err_t slime_vqf_fusion_update_gyroscope(
  * @param accelerometer_ms2_enu	The gravity in meter(s)per-second-squared and ENU frame.
  * @return						The status of the accelerometer update.
  */
-static esp_err_t slime_vqf_fusion_update_accelerometer(
-			slime_fusion_context_t*	fusion_context,
-	const	ceigen_matrix_handle_t	accelerometer_ms2_enu
-) {
+static esp_err_t slime_vqf_fusion_update_accelerometer(slime_fusion_context_t* fusion_context, const ceigen_matrix_handle_t accelerometer_ms2_enu) {
 	// We cannot proceed without a context and gyroscope data.
 	ESP_RETURN_ON_FALSE(fusion_context			!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_fusion_context_t handle provided when performing accelerometer update.");
 	ESP_RETURN_ON_FALSE(accelerometer_ms2_enu	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No ceigen_matrix_handle_t handle provided when performing accelerometer update.");
@@ -136,15 +147,13 @@ static esp_err_t slime_vqf_fusion_update_accelerometer(
 		/* field_offset	= */ base
 	);
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "VQF fusion context \"%s\" is trying doing accelerometer update. (%.2f m/s^2, %.2f m/s^2, %.2f m/s^2)",
-			/* s	*/ fusion_context->name,
-			/* .2f	*/ ceigen_get_matrix_coefficient(accelerometer_ms2_enu, 0U, 0U),
-			/* .2f	*/ ceigen_get_matrix_coefficient(accelerometer_ms2_enu, 1U, 0U),
-			/* .2f	*/ ceigen_get_matrix_coefficient(accelerometer_ms2_enu, 2U, 0U)
-		);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_VQF_FUSION_LOG("VQF fusion context \"%s\" is trying doing accelerometer update: x=%.2f m/s^2, y=%.2f m/s^2, z=%.2f m/s^2.",
+		/* s	*/ fusion_context->name,
+		/* .2f	*/ ceigen_get_matrix_coefficient(accelerometer_ms2_enu, 0U, 0U),
+		/* .2f	*/ ceigen_get_matrix_coefficient(accelerometer_ms2_enu, 1U, 0U),
+		/* .2f	*/ ceigen_get_matrix_coefficient(accelerometer_ms2_enu, 2U, 0U)
+	);
 
 	// Do the accelerometer update.
 	vqf_update_acc(
@@ -161,10 +170,7 @@ static esp_err_t slime_vqf_fusion_update_accelerometer(
  * @param magnetometer_gauss_enu	The magnetic flux density in gauss and ENU frame.
  * @return							The status of the magnetometer update.
  */
-static esp_err_t slime_vqf_fusion_update_magnetometer(
-			slime_fusion_context_t*	fusion_context,
-	const	ceigen_matrix_handle_t	magnetometer_gauss_enu
-) {
+static esp_err_t slime_vqf_fusion_update_magnetometer(slime_fusion_context_t* fusion_context, const ceigen_matrix_handle_t magnetometer_gauss_enu) {
 	// We cannot proceed without a context and gyroscope data.
 	ESP_RETURN_ON_FALSE(fusion_context			!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_fusion_context_t handle provided when performing magnetometer update.");
 	ESP_RETURN_ON_FALSE(magnetometer_gauss_enu	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No ceigen_matrix_handle_t handle provided when performing magnetometer update.");
@@ -176,15 +182,13 @@ static esp_err_t slime_vqf_fusion_update_magnetometer(
 		/* field_offset	= */ base
 	);
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "VQF fusion context \"%s\" is trying doing magnetometer update. (%.2f gauss, %.2f gauss, %.2f gauss)",
-			/* s	*/ fusion_context->name,
-			/* .2f	*/ ceigen_get_matrix_coefficient(magnetometer_gauss_enu, 0U, 0U),
-			/* .2f	*/ ceigen_get_matrix_coefficient(magnetometer_gauss_enu, 1U, 0U),
-			/* .2f	*/ ceigen_get_matrix_coefficient(magnetometer_gauss_enu, 2U, 0U)
-		);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_VQF_FUSION_LOG("VQF fusion context \"%s\" is trying doing magnetometer update: x=%.2f gauss, y=%.2f gauss, z=%.2f gauss.",
+		/* s	*/ fusion_context->name,
+		/* .2f	*/ ceigen_get_matrix_coefficient(magnetometer_gauss_enu, 0U, 0U),
+		/* .2f	*/ ceigen_get_matrix_coefficient(magnetometer_gauss_enu, 1U, 0U),
+		/* .2f	*/ ceigen_get_matrix_coefficient(magnetometer_gauss_enu, 2U, 0U)
+	);
 
 	// Do the magnetometer update.
 	vqf_update_mag(
@@ -217,42 +221,36 @@ static esp_err_t slime_vqf_fusion_get_orientation(
 		/* field_offset	= */ base
 	);
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "VQF Fusion context \"%s\" is trying getting orientations:%s%s.",
-			/* s */ fusion_context->name,
-			/* s */ quaternion_enu_6D_out ? " 6D" : "",
-			/* s */ quaternion_enu_9D_out ? " 9D" : ""
-		);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_VQF_FUSION_LOG("VQF Fusion context \"%s\" is trying getting orientations:%s%s.",
+		/* s */ fusion_context->name,
+		/* s */ quaternion_enu_6D_out ? " 6D" : "",
+		/* s */ quaternion_enu_9D_out ? " 9D" : ""
+	);
 
 	// Get the orientations.
 	if (quaternion_enu_6D_out) vqf_get_quat_6D(vqf_fusion_context->vqf_context, quaternion_enu_6D_out);
 	if (quaternion_enu_9D_out) vqf_get_quat_9D(vqf_fusion_context->vqf_context, quaternion_enu_9D_out);
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		if (quaternion_enu_6D_out) {
-			ESP_LOGD(TAG, "Got ENU frame 6D orientation: w=%.2f, x=%.2f, y=%.2f, z=%.2f.",
-				/* .2f	*/ ceigen_get_quaternion_w(quaternion_enu_6D_out),
-				/* .2f	*/ ceigen_get_quaternion_x(quaternion_enu_6D_out),
-				/* .2f	*/ ceigen_get_quaternion_y(quaternion_enu_6D_out),
-				/* .2f	*/ ceigen_get_quaternion_z(quaternion_enu_6D_out)
-			);
-		}
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	if (quaternion_enu_6D_out) {
+		SLIME_VQF_FUSION_LOG("Got ENU frame 6D orientation: w=%.2f, x=%.2f, y=%.2f, z=%.2f.",
+			/* .2f	*/ ceigen_get_quaternion_w(quaternion_enu_6D_out),
+			/* .2f	*/ ceigen_get_quaternion_x(quaternion_enu_6D_out),
+			/* .2f	*/ ceigen_get_quaternion_y(quaternion_enu_6D_out),
+			/* .2f	*/ ceigen_get_quaternion_z(quaternion_enu_6D_out)
+		);
+	}
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		if (quaternion_enu_9D_out) {
-			ESP_LOGD(TAG, "Got ENU frame 9D orientation: w=%.2f, x=%.2f, y=%.2f, z=%.2f.",
-				/* .2f	*/ ceigen_get_quaternion_w(quaternion_enu_9D_out),
-				/* .2f	*/ ceigen_get_quaternion_x(quaternion_enu_9D_out),
-				/* .2f	*/ ceigen_get_quaternion_y(quaternion_enu_9D_out),
-				/* .2f	*/ ceigen_get_quaternion_z(quaternion_enu_9D_out)
-			);
-		}
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	if (quaternion_enu_9D_out) {
+		SLIME_VQF_FUSION_LOG("Got ENU frame 9D orientation: w=%.2f, x=%.2f, y=%.2f, z=%.2f.",
+			/* .2f	*/ ceigen_get_quaternion_w(quaternion_enu_9D_out),
+			/* .2f	*/ ceigen_get_quaternion_x(quaternion_enu_9D_out),
+			/* .2f	*/ ceigen_get_quaternion_y(quaternion_enu_9D_out),
+			/* .2f	*/ ceigen_get_quaternion_z(quaternion_enu_9D_out)
+		);
+	}
 
 	return ESP_OK;
 }
@@ -281,20 +279,16 @@ static esp_err_t slime_vqf_fusion_get_state(
 		/* field_offset	= */ base
 	);
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "VQF Fusion context \"%s\" is trying getting states.", fusion_context->name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_VQF_FUSION_LOG("VQF Fusion context \"%s\" is trying getting states.", fusion_context->name);
 
 	// Get the states.
 	*mag_disturbed_out = vqf_get_mag_dist_detected	(vqf_fusion_context->vqf_context);
 	*rest_detected_out = vqf_get_rest_detected		(vqf_fusion_context->vqf_context);
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Got magnetic disturbance state: %s.",	*mag_disturbed_out ? "true" : "false");
-		ESP_LOGD(TAG, "Got rest detection state: %s.",			*rest_detected_out ? "true" : "false");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_VQF_FUSION_LOG("Got magnetic disturbance state: %s.",	*mag_disturbed_out ? "true" : "false");
+	SLIME_VQF_FUSION_LOG("Got rest detection state: %s.",		*rest_detected_out ? "true" : "false");
 
 	return ESP_OK;
 }
@@ -315,10 +309,8 @@ static esp_err_t slime_vqf_fusion_reset(slime_fusion_context_t* fusion_context) 
 		/* field_offset	= */ base
 	);
 
-	// Log the operation if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "VQF Fusion context \"%s\" is trying resetting fusion.", fusion_context->name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the operation.
+	SLIME_VQF_FUSION_LOG("VQF Fusion context \"%s\" is trying resetting fusion.", fusion_context->name);
 
 	// Reset the VQF context.
 	vqf_reset_state(vqf_fusion_context->vqf_context);
@@ -347,23 +339,15 @@ esp_err_t slime_vqf_fusion_context_new(
 	ESP_RETURN_ON_FALSE(fusion_context_config	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No configuration handle provided when creating VQF fusion context.");
 	ESP_RETURN_ON_FALSE(sensor_context			!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_sensor_context_t handle provided when creating VQF fusion context.");
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Creating VQF fusion context \"%s\".", fusion_context_name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
-
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Reinterpreting opaque configuration handle.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Creating VQF fusion context \"%s\".", fusion_context_name);
+	SLIME_VQF_FUSION_LOG("Reinterpreting opaque configuration handle.");
 
 	// Reinterpret the opaque fusion_context_config handle to the vqf_params_t handle.
 	const vqf_params_t* vqf_params = (vqf_params_t*) fusion_context_config;
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Getting sample times from sensor context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Getting sample times from sensor context.");
 
 	// Reserve spaces for sample times.
 	float_t gyroscope_sample_time_ms;
@@ -378,28 +362,22 @@ esp_err_t slime_vqf_fusion_context_new(
 		/* magnetometer_sample_time_ms	= */ &	magnetometer_sample_time_ms
 	), TAG, "Failed to get sample times.");
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Converting sample times in milliseconds to sample times in seconds.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Converting sample times in milliseconds to sample times in seconds.");
 
 	const float_t gyroscope_sample_time_seconds		= gyroscope_sample_time_ms		/ 1000.0f;
 	const float_t accelerometer_sample_time_seconds	= accelerometer_sample_time_ms	/ 1000.0f;
 	const float_t magnetometer_sample_time_seconds	= magnetometer_sample_time_ms	/ 1000.0f;
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Reserving handles of VQF fusion context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Reserving handles of VQF fusion context.");
 
 	// Reserve the handles of VQF fusion context.
 	slime_vqf_fusion_context_t*		vqf_fusion_context;
 	vqf_context_t*					context_vqf_context;
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Creating VQF context of VQF fusion context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Creating VQF context of VQF fusion context.");
 
 	// Create the VQF context.
 	context_vqf_context = vqf_context_new(
@@ -413,10 +391,8 @@ esp_err_t slime_vqf_fusion_context_new(
 	// Check the allocation.
 	ESP_RETURN_ON_FALSE(context_vqf_context != NULL, ESP_ERR_NO_MEM, TAG, "Failed to create VQF context");
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Creating VQF fusion context struct.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Creating VQF fusion context struct.");
 
 	// Create the VQF fusion context struct handle.
 	vqf_fusion_context = calloc(1U, sizeof(slime_vqf_fusion_context_t));
@@ -424,10 +400,8 @@ esp_err_t slime_vqf_fusion_context_new(
 	// Check the allocation.
 	ESP_GOTO_ON_FALSE(vqf_fusion_context != NULL, ESP_ERR_NO_MEM, error, TAG, "Failed to create VQF fusion context struct.");
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Finalizing VQF fusion context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Finalizing VQF fusion context.");
 
 	// Get the base sensor context struct handle from the LSM6DSV+QMC6309 sensor context struct.
 	struct slime_fusion_context* base = &vqf_fusion_context->base;
@@ -449,21 +423,17 @@ esp_err_t slime_vqf_fusion_context_new(
 	// Return the created VQF fusion context.
 	*fusion_context_out = base;
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "VQF fusion context \"%s\" has been created.", fusion_context_name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("VQF fusion context \"%s\" has been created.", fusion_context_name);
 
 	return ret;
 
 	// Resource cleanup when error occurred.
 	error:
 
-	// Log the error if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Error occurred: %s", esp_err_to_name(ret));
-		ESP_LOGD(TAG, "Cleaning up resources.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the error.
+	SLIME_VQF_FUSION_LOG("Error occurred: %s", esp_err_to_name(ret));
+	SLIME_VQF_FUSION_LOG("Cleaning up resources.");
 
 	// Cleanup VQF context.
 	vqf_context_del(context_vqf_context);
@@ -478,15 +448,9 @@ esp_err_t slime_vqf_fusion_context_del(slime_fusion_context_t* fusion_context_in
 	// Reserve the name of the fusion context.
 	const char* name = fusion_context_in->name;
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Releasing VQF fusion context \"%s\".", name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
-
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Getting container VQF fusion context handle from the base fusion context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Releasing VQF fusion context \"%s\".", name);
+	SLIME_VQF_FUSION_LOG("Getting container VQF fusion context handle from the base fusion context.");
 
 	// Get the container VQF fusion context handle of the base fusion context handle.
 	slime_vqf_fusion_context_t* vqf_fusion_context = __containerof(
@@ -495,18 +459,14 @@ esp_err_t slime_vqf_fusion_context_del(slime_fusion_context_t* fusion_context_in
 		/* field_offset	= */ base
 	);
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Releasing VQF context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Releasing VQF context.");
 
 	// Release the VQF context.
 	vqf_context_del(vqf_fusion_context->vqf_context);
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Detaching all fields of the VQF fusion context.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Detaching all fields of the VQF fusion context.");
 
 	// Detach all fields in the base fusion context.
 	fusion_context_in->update_gyroscope		= NULL;
@@ -522,18 +482,14 @@ esp_err_t slime_vqf_fusion_context_del(slime_fusion_context_t* fusion_context_in
 	// Detach fields in the VQF fusion context.
 	vqf_fusion_context->vqf_context	= NULL;
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "Releasing VQF fusion context struct.");
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("Releasing VQF fusion context struct.");
 
 	// Release the VQF fusion context struct.
 	free(vqf_fusion_context);
 
-	// Log the progress if debug logging is enabled.
-	#ifdef CONFIG_SLIME_DEBUG_LOGGING
-		ESP_LOGD(TAG, "VQF fusion context \"%s\" has been released.", name);
-	#endif // CONFIG_SLIME_DEBUG_LOGGING
+	// Log the progress.
+	SLIME_VQF_FUSION_LOG("VQF fusion context \"%s\" has been released.", name);
 
 	return ESP_OK;
 }

@@ -11,6 +11,7 @@
 #include "slime_magneto.h"
 #include "slime_sensor.h"
 #include "slime_fusion.h"
+#include "slime_network.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,6 +66,11 @@ extern const slime_sensor_context_type_t slime_sensor_context_type_table[8];
  * @brief The table of the fusion context types by fusion context type ID.
  */
 extern const slime_fusion_context_type_t slime_fusion_context_type_table[1];
+
+/**
+ * @brief The configuration of the network context.
+ */
+extern const slime_network_context_config_t network_context_config;
 
 #ifdef __cplusplus
 }
