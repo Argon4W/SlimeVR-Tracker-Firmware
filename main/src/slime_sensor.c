@@ -91,7 +91,7 @@ slime_sensor_error_t slime_sensor_poll_fifo(slime_sensor_context_t* sensor_conte
 	esp_err_t				ret;
 
 	// We cannot proceed without a context.
-	ESP_GOTO_ON_FALSE(sensor_context != NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_t handle provided when performing polling FIFO data.");
+	ESP_GOTO_ON_FALSE(sensor_context != NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No slime_sensor_context_t handle provided when performing polling FIFO data.");
 
 	// Log the operation.
 	SLIME_SENSOR_LOG("Sensor context \"%s\" is trying polling FIFO data.", sensor_context->name);
@@ -99,14 +99,14 @@ slime_sensor_error_t slime_sensor_poll_fifo(slime_sensor_context_t* sensor_conte
 	// Poll the FIFO data using the function handle in the sensor context if it exists.
 	if (sensor_context->poll_fifo) {
 		// Poll the FIFO data.
-		ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(sensor_context->poll_fifo(sensor_context)), error_sensor, TAG, "Failed to register timestamp callback.");
+		ESP_GOTO_ON_ERROR(SLIME_TO_ESP_ERROR(sensor_context->poll_fifo(sensor_context)), error_sen, TAG, "Failed to register timestamp callback.");
 	}
 
 	return SLIME_SENSOR_OK();
 
 	// Wrap the ESP error to the slime sensor error.
-	error_host:		return SLIME_HOST_ERROR(ret);
-	error_sensor:	return err;
+	error_esp: return SLIME_ESP_ERROR(ret);
+	error_sen: return err;
 }
 
 slime_sensor_error_t slime_sensor_context_new(
@@ -119,10 +119,10 @@ slime_sensor_error_t slime_sensor_context_new(
 	esp_err_t				ret;
 
 	// We cannot proceed without a sensor type table, a GPIO context, an I2C context, and a handle to receive the created sensor context.
-	ESP_GOTO_ON_FALSE(sensor_context_out		!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_t handle provided when creating sensor context.");
-	ESP_GOTO_ON_FALSE(sensor_context_type_table	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_type_t table handle provided when creating sensor context.");
-	ESP_GOTO_ON_FALSE(gpio_context				!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No gpio_context handle provided when creating sensor context.");
-	ESP_GOTO_ON_FALSE(i2c_context				!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_gpio_context_t handle provided when creating sensor context.");
+	ESP_GOTO_ON_FALSE(sensor_context_out		!= NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No slime_sensor_context_t handle provided when creating sensor context.");
+	ESP_GOTO_ON_FALSE(sensor_context_type_table	!= NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No slime_sensor_context_type_t table handle provided when creating sensor context.");
+	ESP_GOTO_ON_FALSE(gpio_context				!= NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No gpio_context handle provided when creating sensor context.");
+	ESP_GOTO_ON_FALSE(i2c_context				!= NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No slime_gpio_context_t handle provided when creating sensor context.");
 
 	// Log the progress.
 	SLIME_SENSOR_LOG("Creating sensor context.");
@@ -138,10 +138,10 @@ slime_sensor_error_t slime_sensor_context_new(
 	ESP_GOTO_ON_ERROR(slime_gpio_get_sensor_board_id(
 		/* gpio_context		= */ gpio_context,
 		/* sensor_broad_id	= */ &sensor_board_id
-	), error_host, TAG, "Failed to get sensor board ID.");
+	), error_esp, TAG, "Failed to get sensor board ID.");
 
 	// Check the range of the sensor board ID.
-	ESP_GOTO_ON_FALSE(sensor_board_id < 8U, ESP_ERR_INVALID_STATE, error_host, TAG, "Sensor board ID must be smaller than 8");
+	ESP_GOTO_ON_FALSE(sensor_board_id < 8U, ESP_ERR_INVALID_STATE, error_esp, TAG, "Sensor board ID must be smaller than 8");
 
 	// Log the progress.
 	SLIME_SENSOR_LOG("Mapping sensor board ID to sensor context type.");
@@ -150,25 +150,25 @@ slime_sensor_error_t slime_sensor_context_new(
 	const slime_sensor_context_type_t* sensor_context_type = &sensor_context_type_table[sensor_board_id];
 
 	// Check the sensor context type.
-	ESP_GOTO_ON_FALSE(sensor_context_type != NULL, ESP_ERR_NOT_FOUND, error_host, TAG, "Failed to get a sensor context type from the sensor context type table.");
+	ESP_GOTO_ON_FALSE(sensor_context_type != NULL, ESP_ERR_NOT_FOUND, error_esp, TAG, "Failed to get a sensor context type from the sensor context type table.");
 
 	// Log the progress.
 	SLIME_SENSOR_LOG("Creating sensor context of the sensor context type.");
 
 	// Create the sensor context of the sensor context type.
-	ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(sensor_context_type->sensor_context_new(
+	ESP_GOTO_ON_ERROR(SLIME_TO_ESP_ERROR(sensor_context_type->sensor_context_new(
 		/* sensor_context_out		= */ sensor_context_out,
 		/* sensor_context_name		= */ sensor_context_type->name,
 		/* sensor_context_config	= */ sensor_context_type->config,
 		/* i2c_context				= */ i2c_context
-	)), error_sensor, TAG, "Failed to create sensor context.");
+	)), error_sen, TAG, "Failed to create sensor context.");
 
 	// The has-been-created message is logged in the impl function.
 	return SLIME_SENSOR_OK();
 
 	// Wrap the ESP error to the slime sensor error.
-	error_host:		return SLIME_HOST_ERROR(ret);
-	error_sensor:	return err;
+	error_esp: return SLIME_ESP_ERROR(ret);
+	error_sen: return err;
 }
 
 esp_err_t slime_sensor_context_del(slime_sensor_context_t* sensor_context_in) {

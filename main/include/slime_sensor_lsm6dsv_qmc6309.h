@@ -22,7 +22,7 @@ typedef struct {
 	lsm6dsv_data_rate_t		lsm6dsv_accelerometer_data_rate;		/*!< The output data rate of the accelerometer of the LSM6DSV. */
 	lsm6dsv_fifo_gy_batch_t	lsm6dsv_fifo_gyroscope_batch_rate;		/*!< The FIFO batch rate of the gyroscope of the LSM6DSV. */
 	lsm6dsv_fifo_xl_batch_t	lsm6dsv_fifo_accelerometer_batch_rate;	/*!< The FIFO batch rate of the accelerometer of the LSM6DSV. */
-	qmc6309_setup_t			qmc6309_setup;							/*!< The setup parameters of the QMC6309. */
+	qmc6309_hl_setup_t		qmc6309_setup;							/*!< The setup parameters of the QMC6309. */
 } slime_lsm6dsv_qmc6309_sensor_context_config_t;
 
 /**

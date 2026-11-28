@@ -6,6 +6,7 @@
 #include "qmc6309_reg.h"
 #include "esp_lcd_st7735.h"
 #include "slime_sensor_empty.h"
+#include "slime_sensor_lsm6dsv_mmc5603.h"
 #include "slime_sensor_lsm6dsv_qmc6309.h"
 #include "slime_fusion_vqf.h"
 
@@ -61,6 +62,28 @@ static const slime_magneto_calibration_coefficients_t slime_magneto_calibration_
 };
 
 /**
+ * @brief The internal configuration of the LSM6DSV+MMC5603 sensor context.
+ */
+static const slime_lsm6dsv_mmc5603_sensor_context_config_t slime_lsm6dsv_mmc5603_sensor_context_config = {
+	.lsm6dsv_device_address					= LSM6DSV_I2C_ADD_L >> 1U,		/*!< The I2C address of the LSM6DSV in 7-bit format. */
+	.mmc5603_device_address					= MMC5603_I2C_ADDRESS,			/*!< The I2C address of the MMC5603. */
+	.lsm6dsv_gyroscope_full_scale			= LSM6DSV_1000dps,				/*!< Set gyroscope full scale range to 1000dps. */
+	.lsm6dsv_accelerometer_full_scale		= LSM6DSV_4g,					/*!< Set accelerometer full scale range to 4g. */
+	.lsm6dsv_sensor_hub_data_rate			= LSM6DSV_SH_60Hz,				/*!< Set sensor hub data rate to 60Hz that matches the 60Hz ODR of MMC5603. */
+	.lsm6dsv_gyroscope_data_rate			= LSM6DSV_ODR_AT_240Hz,			/*!< Set the output data rate of gyroscope to 960Hz. */
+	.lsm6dsv_accelerometer_data_rate		= LSM6DSV_ODR_AT_120Hz,			/*!< Set the output data rate of accelerometer to 960Hz. */
+	.lsm6dsv_fifo_gyroscope_batch_rate		= LSM6DSV_GY_BATCHED_AT_240Hz,	/*!< Set the FIFO batch rate of gyroscope to the same rate as the gyroscope ODR. */
+	.lsm6dsv_fifo_accelerometer_batch_rate	= LSM6DSV_XL_BATCHED_AT_120Hz,	/*!< Set the FIFO batch rate of accelerometer to the same rate as the accelerometer ODR. */
+	.mmc5603_setup = {								/*!< The MMC5603 setup parameters. */
+		.odr					= 60U,				/*!< Set the output data rate to 60Hz. */
+		.high_power				= PROPERTY_DISABLE,	/*!< We don't need 1000Hz. */
+		.auto_set_reset			= PROPERTY_ENABLE,	/*!< MUST enable the automatic set/reset. */
+		.periodic_set			= PROPERTY_DISABLE,	/*!< It is recommended to be enabled, but it will shift the output for some reason. */
+		.bandwidth				= MEAS_TIME_6_6_MS	/*!< Better noise performance. */
+	}
+};
+
+/**
  * @brief The internal configuration of the LSM6DSV+QMC6309 sensor context.
  */
 static const slime_lsm6dsv_qmc6309_sensor_context_config_t slime_lsm6dsv_qmc6309_sensor_context_config = {
@@ -68,7 +91,7 @@ static const slime_lsm6dsv_qmc6309_sensor_context_config_t slime_lsm6dsv_qmc6309
 	.qmc6309_device_address					= QMC6309_I2C_ADDRESS,			/*!< The I2C address of the QMC6309. */
 	.lsm6dsv_gyroscope_full_scale			= LSM6DSV_1000dps,				/*!< Set gyroscope full scale range to 1000dps. */
 	.lsm6dsv_accelerometer_full_scale		= LSM6DSV_4g,					/*!< Set accelerometer full scale range to 4g. */
-	.lsm6dsv_sensor_hub_data_rate			= LSM6DSV_SH_60Hz,				/*!< Set sensor hub data rate to 240Hz that matches the 200Hz ODR of QMC6309. */
+	.lsm6dsv_sensor_hub_data_rate			= LSM6DSV_SH_60Hz,				/*!< Set sensor hub data rate to 60Hz that matches the 50Hz ODR of QMC6309. */
 	.lsm6dsv_gyroscope_data_rate			= LSM6DSV_ODR_AT_240Hz,			/*!< Set the output data rate of gyroscope to 960Hz. */
 	.lsm6dsv_accelerometer_data_rate		= LSM6DSV_ODR_AT_120Hz,			/*!< Set the output data rate of accelerometer to 960Hz. */
 	.lsm6dsv_fifo_gyroscope_batch_rate		= LSM6DSV_GY_BATCHED_AT_240Hz,	/*!< Set the FIFO batch rate of gyroscope to the same rate as the gyroscope ODR. */
@@ -77,7 +100,7 @@ static const slime_lsm6dsv_qmc6309_sensor_context_config_t slime_lsm6dsv_qmc6309
 		.mode			= NORMAL,		/*!< Set to normal mode. */
 		.set_reset_mode	= SET_RESET_ON,	/*!< MUST set the set/reset mode to ON. */
 		.rng			= RNG_8G,		/*!< Set the full scale range to 8G. */
-		.odr			= ODR_50HZ,		/*!< Set the output data rate to maximum 200Hz. */
+		.odr			= ODR_50HZ,		/*!< Set the output data rate to 50Hz. */
 		.osr1			= OSR1_8,		/*!< Set over sample rate to 8. */
 		.osr2			= OSR2_8		/*!< Set low pass filter depth to 8. */
 	}
@@ -91,7 +114,7 @@ static const vqf_params_t vqf_params = {
 	.tau_mag							= 3.0f,
 	.motion_bias_est_enabled			= true,
 	.rest_bias_est_enabled				= true,
-	.mag_dist_rejection_enabled			= false,
+	.mag_dist_rejection_enabled			= true,
 	.bias_sigma_init					= 0.5f,
 	.bias_forgetting_time				= 100.0f,
 	.bias_clip							= 2.0f,
@@ -314,15 +337,15 @@ const slime_sensor_context_type_t slime_sensor_context_type_table[8] = {
 		.config				= NULL,								/*!< No configuration for empty sensor context. */
 		.name				= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
 	},
-	{																		/*!< The sensor type of sensor board ID 001 (LSM6DSV+QMC6309). */
+	{																		/*!< The sensor type of sensor board ID 001 (LSM6DSV+MMC5603). */
+		.sensor_context_new	= slime_lsm6dsv_mmc5603_sensor_context_new,		/*!< The sensor context creation function handle of the LSM6DSV+MMC5603 sensor context. */
+		.config				= &slime_lsm6dsv_mmc5603_sensor_context_config,	/*!< Configuration of the LSM6DSV+MMC5603 sensor context. */
+		.name				= "lsm6dsv_mmc5603_sensor"						/*!< The name of the LSM6DSV+MMC5603 sensor. */
+	},
+	{																		/*!< The sensor type of sensor board ID 010 (LSM6DSV+QMC6309). */
 		.sensor_context_new	= slime_lsm6dsv_qmc6309_sensor_context_new,		/*!< The sensor context creation function handle of the LSM6DSV+QMC6309 sensor context. */
 		.config				= &slime_lsm6dsv_qmc6309_sensor_context_config,	/*!< Configuration of the LSM6DSV+QMC6309 sensor context. */
 		.name				= "lsm6dsv_qmc6309_sensor"						/*!< The name of the LSM6DSV+QMC6309 sensor. */
-	},
-	{															/*!< The sensor type of sensor board ID 010 (Currently empty). */
-		.sensor_context_new	= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */
-		.config				= NULL,								/*!< No configuration for empty sensor context. */
-		.name				= "empty_sensor_id_000"				/*!< The default name of the empty sensor. */
 	},
 	{															/*!< The sensor type of sensor board ID 011 (Currently empty). */
 		.sensor_context_new	= slime_empty_sensor_context_new,	/*!< The sensor context creation function pointer of the empty sensor context. */

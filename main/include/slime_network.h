@@ -7,6 +7,10 @@
 #include "slime_wifi.h"
 #include "slime_udp.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 /**
  * @brief The packet type enum of the network tick.
  */
@@ -114,7 +118,7 @@ typedef struct {
  * @brief The network context struct.
  */
 typedef struct {
-			slime_wifi_context_t*			wifi_context;				/*!< The Wi-Fi context of the network context. */
+	const	slime_wifi_context_t*			wifi_context;				/*!< The Wi-Fi context of the network context. */
 	const	slime_network_tick_config_t*	network_tick_config;		/*!< The configuration of the network tick. */
 			EventGroupHandle_t				network_tick_events;		/*!< The event group of the network tick. */
 			TaskHandle_t					network_tick_task_handle;	/*!< The task handle of the network tick task. */
@@ -175,7 +179,7 @@ esp_err_t slime_network_update_battery_level(
 esp_err_t slime_network_context_new(
 			slime_network_context_t**		network_context_out,
 	const	slime_network_context_config_t*	network_context_config,
-			slime_wifi_context_t*			wifi_context
+	const	slime_wifi_context_t*			wifi_context
 );
 
 /**
@@ -184,5 +188,9 @@ esp_err_t slime_network_context_new(
  * @return						The status of releasing.
  */
 esp_err_t slime_network_context_del(slime_network_context_t* network_context_in);
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif // SLIME_NETWORK_H

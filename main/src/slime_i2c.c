@@ -1,5 +1,6 @@
 #include "stdlib.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
 #include "lsm6dsv_reg.h"
 #include "qmc6309_reg.h"
 #include "slime_i2c.h"
@@ -37,6 +38,12 @@ int32_t slime_i2c_write_register(
 	// We cannot proceed without a handle.
 	ESP_RETURN_ON_FALSE(i2c_device_handle != NULL, ESP_ERR_INVALID_ARG, TAG, "No i2c_device_handle provided when performing writing to registers.");
 
+	// Log the operation.
+	SLIME_I2C_LOG("I2C context is performing writing %" PRIu16 " byte(s) to register 0x%02" PRIX8 ".",
+		/* PRIu16	*/ write_length,
+		/* PRIX8	*/ register_address
+	);
+
 	// Describe all buffers we are going to send to given I2C device.
 	i2c_master_transmit_multi_buffer_info_t buffers[2U] = {
 		{
@@ -50,12 +57,6 @@ int32_t slime_i2c_write_register(
 			.buffer_size	= write_length
 		},
 	};
-
-	// Log the operation.
-	SLIME_I2C_LOG("I2C context is performing writing %" PRIu16 " byte(s) to register 0x%02" PRIX8 ".",
-		/* PRIu16	*/ write_length,
-		/* PRIX8	*/ register_address
-	);
 
 	// Cast the opaque pointer to I2C master device handle.
 	const i2c_master_dev_handle_t device_handle = (i2c_master_dev_handle_t) i2c_device_handle;
@@ -78,7 +79,7 @@ int32_t slime_i2c_read_register(
 	const	uint16_t	read_length
 ) {
 	// We cannot proceed without a handle.
-	ESP_RETURN_ON_FALSE(i2c_device_handle != NULL, ESP_ERR_INVALID_ARG, TAG, "No i2c_device_handle provided when performing writing to registers.");
+	ESP_RETURN_ON_FALSE(i2c_device_handle != NULL, ESP_ERR_INVALID_ARG, TAG, "No i2c_device_handle provided when performing reading from registers.");
 
 	// Log the operation.
 	SLIME_I2C_LOG("I2C context is performing reading %" PRIu16 " byte(s) from register 0x%02" PRIX8 ".",

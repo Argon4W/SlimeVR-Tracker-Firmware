@@ -341,9 +341,9 @@ esp_err_t slime_vqf_fusion_context_new(
 
 	// Log the progress.
 	SLIME_VQF_FUSION_LOG("Creating VQF fusion context \"%s\".", fusion_context_name);
-	SLIME_VQF_FUSION_LOG("Reinterpreting opaque configuration handle.");
+	SLIME_VQF_FUSION_LOG("Extracting configuration handle.");
 
-	// Reinterpret the opaque fusion_context_config handle to the vqf_params_t handle.
+	// Reinterpret the vqf_params_t handle from the opaque fusion_context_config handle.
 	const vqf_params_t* vqf_params = (vqf_params_t*) fusion_context_config;
 
 	// Log the progress.

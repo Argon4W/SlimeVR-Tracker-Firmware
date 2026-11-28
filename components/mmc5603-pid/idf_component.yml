@@ -1,0 +1,9 @@
+version: "1.0.0"
+maintainers: ["Argon4W"]
+description: "MMC5603 platform independent driver based on Standard C language."
+license: "MIT License"
+url: "https://github.com/Argon4W/mmc5603-pid"
+repository: "https://github.com/Argon4W/mmc5603-pid.git"
+issues: "https://github.com/Argon4W/mmc5603-pid/issues"
+dependencies:
+  idf: ">=5.0"

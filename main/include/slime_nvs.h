@@ -14,7 +14,7 @@ extern "C" {
  */
 typedef struct {
 	const	char*	name;	/*!< The name key of the blob. */
-	const	void*	init;	/*!< The default initial value of the blob if not found or incompatible. */
+	const	void*	init;	/*!< The default value of the blob if not found or incompatible. */
 			size_t	size;	/*!< The size of the blob. */
 } slime_nvs_blob_key_t;
 

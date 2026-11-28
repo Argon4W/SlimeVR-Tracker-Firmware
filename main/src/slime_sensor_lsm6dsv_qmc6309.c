@@ -5,34 +5,36 @@
 #include "freertos/task.h"
 #include "esp_bit_defs.h"
 #include "esp_log.h"
+#include "slime_delay.h"
 #include "slime_sensor_lsm6dsv_qmc6309.h"
 
 /**
  * @brief The flag of gyroscope data presence in the FIFO data buffer of LSM6DSV+QMC6309 sensor context.
  */
-#define SENSOR_FIFO_GYROSCOPE BIT0
+#define SLIME_LSM6DSV_QMC6309_FIFO_GYROSCOPE BIT0
 
 /**
  * @brief The flag of timestamp data presence in the FIFO data buffer of LSM6DSV+QMC6309 sensor context.
  */
-#define SENSOR_FIFO_TIMESTAMP BIT1
+#define SLIME_LSM6DSV_QMC6309_FIFO_TIMESTAMP BIT1
 
 /**
  * @brief The flag of accelerometer data presence in the FIFO data buffer of LSM6DSV+QMC6309 sensor context.
  */
-#define SENSOR_FIFO_ACCELEROMETER BIT2
+#define SLIME_LSM6DSV_QMC6309_FIFO_ACCELEROMETER BIT2
 
 /**
  * @brief The flag of magnetometer data presence in the FIFO data buffer of LSM6DSV+QMC6309 sensor context.
  */
-#define SENSOR_FIFO_MAGNETOMETER BIT3
+#define SLIME_LSM6DSV_QMC6309_FIFO_MAGNETOMETER BIT3
 
 /**
  * @brief		Pack 2 uint8_t into an int16_t.
  * @param msb	The higher 8-bit (MSByte) of the int16_t.
  * @param lsb	The lower 8-bit (LSByte) of the int16_t.
+ * @return		The packet int16_t.
  */
-#define SENSOR_PACK_INT16(msb, lsb) ((int16_t) ((((uint16_t) (msb)) << 8U) | (lsb)))
+#define SLIME_LSM6DSV_QMC6309_PACK_INT16(msb, lsb) ((int16_t) ((((uint16_t) (msb)) << 8U) | (lsb)))
 
 /**
  * @brief		Pack 4 uint8_t into an uint32_t.
@@ -41,7 +43,14 @@
  * @param b08	The [15:8] of the uint32_t.
  * @param b00	The [7:0] of the uint32_t.
  */
-#define SENSOR_PACK_UINT32(b24, b16, b08, b00) ((uint32_t) ((((uint32_t) (b24)) << 24U) | (((uint32_t) (b16)) << 16U) | (((uint32_t) (b08)) << 8U) | (b00)))
+#define SLIME_LSM6DSV_QMC6309_PACK_UINT32(b24, b16, b08, b00) ((uint32_t) ((((uint32_t) (b24)) << 24U) | (((uint32_t) (b16)) << 16U) | (((uint32_t) (b08)) << 8U) | (b00)))
+
+/**
+ * @brief			Extract the LSM6DSV+QMC6309 sensor context from the base sensor context.
+ * @param context	The base slime_sensor_context_t handle to extract the LSM6DSV+QMC6309 sensor context.
+ * @return			The extracted slime_lsm6dsv_qmc6309_sensor_context_t handle.
+ */
+#define SLIME_LSM6DSV_QMC6309_EXTRACT_CONTEXT(context) __containerof((context), slime_lsm6dsv_qmc6309_sensor_context_t, base)
 
 /**
  * @brief The log tag of the Slime LSM6DSV+QMC6309 Sensor.
@@ -74,9 +83,9 @@ typedef struct {
 	int8_t	flags;						/*!< The presence flags of data in the FIFO data buffer. */
 	int16_t	count;						/*!< The FIFO count of data in this FIFO data buffer. */
 	int32_t	timestamp_buffer;			/*!< The raw timestamp LSB buffer of the FIFO data buffer. */
-	int16_t	gyroscope_buffer	[3];	/*!< The raw gyroscope LSB buffer of the FIFO data buffer. */
-	int16_t	accelerometer_buffer[3];	/*!< The raw accelerometer LSB buffer of the FIFO data buffer. */
-	int16_t	magnetometer_buffer	[3];	/*!< The raw magnetometer LSB buffer of the FIFO data buffer. */
+	int16_t	gyroscope_buffer	[3U];	/*!< The raw gyroscope LSB buffer of the FIFO data buffer. */
+	int16_t	accelerometer_buffer[3U];	/*!< The raw accelerometer LSB buffer of the FIFO data buffer. */
+	int16_t	magnetometer_buffer	[3U];	/*!< The raw magnetometer LSB buffer of the FIFO data buffer. */
 } slime_lsm6dsv_qmc6309_sensor_fifo_data_buffer_t;
 
 /**
@@ -111,33 +120,25 @@ typedef struct {
  *				reading.
  */
 static lsm6dsv_sh_cfg_read_t sensor_hub_slave_0_read_config = {
-	.slv_add	= QMC6309_I2C_ADDRESS << 1,	/*!< The 8-bit read address format of the I2C device to read. */
-	.slv_subadd	= QMC6309_STATUS_1,			/*!< The address of the STATUS1 register to be read. */
-	.slv_len	= 1							/*!< We need only the STATUS1 register, so 1. */
+	.slv_add	= QMC6309_I2C_ADDRESS << 1U,	/*!< The 8-bit read address format of the I2C device to read. */
+	.slv_subadd	= QMC6309_STATUS_1,				/*!< The address of the STATUS1 register to be read. */
+	.slv_len	= 1U							/*!< We need only the STATUS1 register, so 1. */
 };
 
 /**
  * @brief The magnetometer output registers batch read of sensor hub slave 1 of LSM6DSV.
  */
 static lsm6dsv_sh_cfg_read_t sensor_hub_slave_1_read_config = {
-	.slv_add	= QMC6309_I2C_ADDRESS << 1,	/*!< The 8-bit read address format of the I2C device to read. */
-	.slv_subadd	= QMC6309_OUT_X_L,			/*!< The start address of the 6 output registers to be read. */
-	.slv_len	= 6							/*!< We need to read ALL 6 output registers. */
+	.slv_add	= QMC6309_I2C_ADDRESS << 1U,	/*!< The 8-bit read address format of the I2C device to read. */
+	.slv_subadd	= QMC6309_OUT_X_L,				/*!< The start address of the 6 output registers to be read. */
+	.slv_len	= 6U							/*!< We need to read ALL 6 output registers. */
 };
-
-/**
- * @brief				Delay in milliseconds.
- * @param milliseconds	The time to delay in milliseconds.
- */
-static void delay_milliseconds(const uint32_t milliseconds) {
-	vTaskDelay(pdMS_TO_TICKS(milliseconds));
-}
 
 /**
  * @brief					Register callbacks.
  * @param sensor_context	The LSM6DSV+QMC6309 sensor context to register callbacks into.
  * @param sensor_callbacks	The handle to the configuration of callbacks.
- * @param user_context		The custom user-defined handle, passed directly to callback's user_context。
+ * @param user_context		The custom user-defined handle, passed directly to callback's user_context.
  * @return					The status of registering callback.
  */
 static esp_err_t slime_lsm6dsv_qmc6309_sensor_register_callbacks(
@@ -150,11 +151,7 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_register_callbacks(
 	ESP_RETURN_ON_FALSE(sensor_callbacks	!= NULL, ESP_ERR_INVALID_ARG, TAG, "No slime_sensor_callbacks_config_t handle provided when performing registering callbacks.");
 
 	// Get the container LSM6DSV+QMC6309 sensor context handle of the base sensor context handle.
-	slime_lsm6dsv_qmc6309_sensor_context_t* lsm6dsv_qmc6309_sensor_context = __containerof(
-		/* value		= */ sensor_context,
-		/* container	= */ slime_lsm6dsv_qmc6309_sensor_context_t,
-		/* field_offset	= */ base
-	);
+	slime_lsm6dsv_qmc6309_sensor_context_t* lsm6dsv_qmc6309_sensor_context = SLIME_LSM6DSV_QMC6309_EXTRACT_CONTEXT(sensor_context);
 
 	// Log the operation.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("LSM6DSV+QMC6309 sensor context \"%s\" is registering callbacks.", sensor_context->name);
@@ -199,14 +196,11 @@ esp_err_t slime_lsm6dsv_qmc6309_sensor_get_sample_time(
 	ESP_RETURN_ON_FALSE(magnetometer_sample_time_ms		!= NULL, ESP_ERR_INVALID_ARG, TAG, "No handle provided to received the magnetometer sample time when performing getting sample times.");
 
 	// Get the container LSM6DSV+QMC6309 sensor context handle of the base sensor context handle.
-	const slime_lsm6dsv_qmc6309_sensor_context_t* lsm6dsv_qmc6309_sensor_context = __containerof(
-		/* value		= */ sensor_context,
-		/* container	= */ slime_lsm6dsv_qmc6309_sensor_context_t,
-		/* field_offset	= */ base
-	);
+	const slime_lsm6dsv_qmc6309_sensor_context_t* lsm6dsv_qmc6309_sensor_context = SLIME_LSM6DSV_QMC6309_EXTRACT_CONTEXT(sensor_context);
 
 	// Log the operation.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("LSM6DSV+QMC6309 sensor context \"%s\" is getting sample times.", sensor_context->name);
+	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Getting container LSM6DSV+QMC6309 sensor context handle from the base sensor context.");
 
 	// Get and return the sample times.
 	*gyroscope_sample_time_ms		= lsm6dsv_qmc6309_sensor_context->lsm6dsv_gyroscope_sample_time;
@@ -225,32 +219,13 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 	esp_err_t ret = ESP_OK;
 
 	// We cannot proceed without a context.
-	ESP_GOTO_ON_FALSE(sensor_context != NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_t handle provided when performing polling FIFO data.");
+	ESP_GOTO_ON_FALSE(sensor_context != NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No slime_sensor_context_t handle provided when performing polling FIFO data.");
+
+	// Get the container LSM6DSV+QMC6309 sensor context handle of the base sensor context handle.
+	slime_lsm6dsv_qmc6309_sensor_context_t* lsm6dsv_qmc6309_sensor_context = SLIME_LSM6DSV_QMC6309_EXTRACT_CONTEXT(sensor_context);
 
 	// Log the operation.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("LSM6DSV+QMC6309 sensor context \"%s\" is polling data from FIFO.", sensor_context->name);
-	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Getting container LSM6DSV+QMC6309 sensor context handle from the base sensor context.");
-
-	// Get the container LSM6DSV+QMC6309 sensor context handle of the base sensor context handle.
-	slime_lsm6dsv_qmc6309_sensor_context_t* lsm6dsv_qmc6309_sensor_context = __containerof(
-		/* value		= */ sensor_context,
-		/* container	= */ slime_lsm6dsv_qmc6309_sensor_context_t,
-		/* field_offset	= */ base
-	);
-
-	// Log the operation.
-	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Extracting frequently modifiable states from LSM6DSV+QMC6309 sensor context.");
-
-	// Extract the modifiable FIFO states from the LSM6DSV+QMC6309 sensor context.
-
-	// The frequently modifiable FIFO timestamp delta states of the LSM6DSV+QM6309 sensor context.
-	uint32_t	fifo_timestamp_last_value = lsm6dsv_qmc6309_sensor_context->fifo_timestamp_last_value;
-	uint8_t		fifo_timestamp_last_valid = lsm6dsv_qmc6309_sensor_context->fifo_timestamp_last_valid;
-
-	// The frequently modifiable FIFO magnetometer data ready of the LSM6DSV+QM6309 sensor context.
-	uint8_t fifo_magnetometer_ready = lsm6dsv_qmc6309_sensor_context->fifo_magnetometer_ready;
-
-	// Log the operation.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Getting FIFO status from LSM6DSV.");
 
 	// Reserve spaces for FIFO status.
@@ -310,7 +285,7 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 				const uint8_t flags = lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->flags;
 
 				// Flush the gyroscope data if the gyroscope data is in the buffer.
-				if (flags & SENSOR_FIFO_GYROSCOPE) {
+				if (flags & SLIME_LSM6DSV_QMC6309_FIFO_GYROSCOPE) {
 					// Get the gyroscope buffer from the FIFO data buffer.
 					const int16_t* gyroscope_buffer = lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->gyroscope_buffer;
 
@@ -345,21 +320,21 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 				}
 
 				// Flush the timestamp data if the timestamp data is in the buffer.
-				if (flags & SENSOR_FIFO_TIMESTAMP) {
+				if (flags & SLIME_LSM6DSV_QMC6309_FIFO_TIMESTAMP) {
 					// Get the raw timestamp LSB data from the timestamp buffer of the FIFO data buffer.
 					const uint32_t timestamp_lsb = lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->timestamp_buffer;
 
 					// Set the last timestamp to the current timestamp if the value of last timestamp is not valid.
-					if (fifo_timestamp_last_valid == false) {
-						fifo_timestamp_last_valid = true;
-						fifo_timestamp_last_value = timestamp_lsb;
+					if (lsm6dsv_qmc6309_sensor_context->fifo_timestamp_last_valid == false) {
+						lsm6dsv_qmc6309_sensor_context->fifo_timestamp_last_valid = true;
+						lsm6dsv_qmc6309_sensor_context->fifo_timestamp_last_value = timestamp_lsb;
 					}
 
 					// Calculate the delta time in seconds.
-					const float_t delta_timestamp_seconds = (timestamp_lsb - fifo_timestamp_last_value) * lsm6dsv_qmc6309_sensor_context->lsm6dsv_timestamp_sensitivity;
+					const float_t delta_timestamp_seconds = (timestamp_lsb - lsm6dsv_qmc6309_sensor_context->fifo_timestamp_last_value) * lsm6dsv_qmc6309_sensor_context->lsm6dsv_timestamp_sensitivity;
 
 					// Update the last timestamp
-					fifo_timestamp_last_value = timestamp_lsb;
+					lsm6dsv_qmc6309_sensor_context->fifo_timestamp_last_value = timestamp_lsb;
 
 					// Log the flushing.
 					SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Trying flushing timestamp data to timestamp callback function: delta=%.6f seconds.", delta_timestamp_seconds);
@@ -378,7 +353,7 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 				}
 
 				// Flush the accelerometer data if the accelerometer data is in the buffer.
-				if (flags & SENSOR_FIFO_ACCELEROMETER) {
+				if (flags & SLIME_LSM6DSV_QMC6309_FIFO_ACCELEROMETER) {
 					// Get the accelerometer buffer from the FIFO data buffer.
 					const int16_t* accelerometer_buffer = lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->accelerometer_buffer;
 
@@ -413,7 +388,7 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 				}
 
 				// Flush the magnetometer data if the magnetometer data is in the buffer.
-				if (flags & SENSOR_FIFO_MAGNETOMETER) {
+				if (flags & SLIME_LSM6DSV_QMC6309_FIFO_MAGNETOMETER) {
 					// Get the magnetometer buffer from the FIFO data buffer.
 					const int16_t* magnetometer_buffer = lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->magnetometer_buffer;
 
@@ -467,12 +442,12 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 					int16_t* gyroscope_buffer = lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->gyroscope_buffer;
 
 					// Copy the raw gyroscope data to the gyroscope buffer.
-					gyroscope_buffer[0U] = SENSOR_PACK_INT16(fifo_word_buffer[fifo_word_index + 2U], fifo_word_buffer[fifo_word_index + 1U]);
-					gyroscope_buffer[1U] = SENSOR_PACK_INT16(fifo_word_buffer[fifo_word_index + 4U], fifo_word_buffer[fifo_word_index + 3U]);
-					gyroscope_buffer[2U] = SENSOR_PACK_INT16(fifo_word_buffer[fifo_word_index + 6U], fifo_word_buffer[fifo_word_index + 5U]);
+					gyroscope_buffer[0U] = SLIME_LSM6DSV_QMC6309_PACK_INT16(fifo_word_buffer[fifo_word_index + 2U], fifo_word_buffer[fifo_word_index + 1U]);
+					gyroscope_buffer[1U] = SLIME_LSM6DSV_QMC6309_PACK_INT16(fifo_word_buffer[fifo_word_index + 4U], fifo_word_buffer[fifo_word_index + 3U]);
+					gyroscope_buffer[2U] = SLIME_LSM6DSV_QMC6309_PACK_INT16(fifo_word_buffer[fifo_word_index + 6U], fifo_word_buffer[fifo_word_index + 5U]);
 
 					// Mark the gyroscope data present in the FIFO buffer.
-					lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->flags |= SENSOR_FIFO_GYROSCOPE;
+					lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->flags |= SLIME_LSM6DSV_QMC6309_FIFO_GYROSCOPE;
 
 					// Log the data.
 					SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Got gyroscope FIFO word from LSM6DSV: x=0x%04" PRIX16 ", y=0x%04" PRIX16 ", z=0x%04" PRIX16 ".",
@@ -484,7 +459,7 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 				// Timestamp data.
 				case LSM6DSV_TIMESTAMP_TAG:
 					// Copy the raw timestamp data to the timestamp buffer of FIFO data buffer.
-					lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->timestamp_buffer = SENSOR_PACK_UINT32(
+					lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->timestamp_buffer = SLIME_LSM6DSV_QMC6309_PACK_UINT32(
 						/* b24 = */ fifo_word_buffer[fifo_word_index + 4U],
 						/* b16 = */ fifo_word_buffer[fifo_word_index + 3U],
 						/* b08 = */ fifo_word_buffer[fifo_word_index + 2U],
@@ -492,7 +467,7 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 					);
 
 					// Mark the timestamp data present in the FIFO buffer.
-					lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->flags |= SENSOR_FIFO_TIMESTAMP;
+					lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->flags |= SLIME_LSM6DSV_QMC6309_FIFO_TIMESTAMP;
 
 					// Log the data.
 					SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Got timestamp FIFO word from LSM6DSV: t=0x%08" PRIX32 ".", lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->timestamp_buffer);
@@ -505,12 +480,12 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 					int16_t* accelerometer_buffer = lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->accelerometer_buffer;
 
 					// Copy the raw accelerometer data into the FIFO count buffer.
-					accelerometer_buffer[0U] = SENSOR_PACK_INT16(fifo_word_buffer[fifo_word_index + 2U], fifo_word_buffer[fifo_word_index + 1U]);
-					accelerometer_buffer[1U] = SENSOR_PACK_INT16(fifo_word_buffer[fifo_word_index + 4U], fifo_word_buffer[fifo_word_index + 3U]);
-					accelerometer_buffer[2U] = SENSOR_PACK_INT16(fifo_word_buffer[fifo_word_index + 6U], fifo_word_buffer[fifo_word_index + 5U]);
+					accelerometer_buffer[0U] = SLIME_LSM6DSV_QMC6309_PACK_INT16(fifo_word_buffer[fifo_word_index + 2U], fifo_word_buffer[fifo_word_index + 1U]);
+					accelerometer_buffer[1U] = SLIME_LSM6DSV_QMC6309_PACK_INT16(fifo_word_buffer[fifo_word_index + 4U], fifo_word_buffer[fifo_word_index + 3U]);
+					accelerometer_buffer[2U] = SLIME_LSM6DSV_QMC6309_PACK_INT16(fifo_word_buffer[fifo_word_index + 6U], fifo_word_buffer[fifo_word_index + 5U]);
 
 					// Mark the accelerometer data present in the FIFO count buffer.
-					lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->flags |= SENSOR_FIFO_ACCELEROMETER;
+					lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->flags |= SLIME_LSM6DSV_QMC6309_FIFO_ACCELEROMETER;
 
 					// Log the data.
 					SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Got accelerometer FIFO word from LSM6DSV: x=0x%04" PRIX16 ", y=0x%04" PRIX16 ", z=0x%04" PRIX16 ".",
@@ -522,7 +497,7 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 				// Magnetometer STATUS1 data.
 				case LSM6DSV_SENSORHUB_SLAVE0_TAG:
 					// Get the STATUS1 register from the FIFO word data.
-					const qmc6309_status_1_t* qmc6309_status_1 = (qmc6309_status_1_t *) &fifo_word_buffer[fifo_word_index + 1U];
+					const qmc6309_raw_status_1_t* qmc6309_status_1 = (qmc6309_raw_status_1_t *) &fifo_word_buffer[fifo_word_index + 1U];
 
 					// Get the data ready bit and data overflow bit from the STATUS1 register value.
 					const uint8_t qmc6309_drdy_bit = qmc6309_status_1->drdy_bit;
@@ -542,25 +517,25 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 						SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Magnetometer FIFO data ready.");
 
 						// Mark the magnetometer data ready.
-						fifo_magnetometer_ready = true;
+						lsm6dsv_qmc6309_sensor_context->fifo_magnetometer_ready = true;
 					}
 					break;
 				// Magnetometer output data.
 				case LSM6DSV_SENSORHUB_SLAVE1_TAG:
 					// Only add the magnetometer data into the FIFO count buffer when the data is ready.
-					if (fifo_magnetometer_ready) {
-						fifo_magnetometer_ready = false; // Reset the data ready state.
+					if (lsm6dsv_qmc6309_sensor_context->fifo_magnetometer_ready) {
+						lsm6dsv_qmc6309_sensor_context->fifo_magnetometer_ready = false; // Reset the data ready state.
 
 						// Get the magnetometer buffer from the FIFO data buffer.
 						int16_t* magnetometer_buffer = lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->magnetometer_buffer;
 
 						// Add the raw magnetometer data to the FIFO count buffer.
-						magnetometer_buffer[0U] = SENSOR_PACK_INT16(fifo_word_buffer[fifo_word_index + 2U], fifo_word_buffer[fifo_word_index + 1U]);
-						magnetometer_buffer[1U] = SENSOR_PACK_INT16(fifo_word_buffer[fifo_word_index + 4U], fifo_word_buffer[fifo_word_index + 3U]);
-						magnetometer_buffer[2U] = SENSOR_PACK_INT16(fifo_word_buffer[fifo_word_index + 6U], fifo_word_buffer[fifo_word_index + 5U]);
+						magnetometer_buffer[0U] = SLIME_LSM6DSV_QMC6309_PACK_INT16(fifo_word_buffer[fifo_word_index + 2U], fifo_word_buffer[fifo_word_index + 1U]);
+						magnetometer_buffer[1U] = SLIME_LSM6DSV_QMC6309_PACK_INT16(fifo_word_buffer[fifo_word_index + 4U], fifo_word_buffer[fifo_word_index + 3U]);
+						magnetometer_buffer[2U] = SLIME_LSM6DSV_QMC6309_PACK_INT16(fifo_word_buffer[fifo_word_index + 6U], fifo_word_buffer[fifo_word_index + 5U]);
 
 						// Mark the magnetometer data present in the FIFO count buffer.
-						lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->flags |= SENSOR_FIFO_MAGNETOMETER;
+						lsm6dsv_qmc6309_sensor_context->fifo_data_buffer->flags |= SLIME_LSM6DSV_QMC6309_FIFO_MAGNETOMETER;
 
 						// Log the data.
 						SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Got magnetometer data FIFO word from LSM6DSV: x=0x%04" PRIX16 ", y=0x%04" PRIX16 ", z=0x%04" PRIX16 ".",
@@ -588,21 +563,13 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
 	}
 
 	// Log the operation.
-	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Updating frequently modifiable FIFO states of the LSM6DSV+QMC6309 sensor context.");
-
-	// Update the (possibly) modified FIFO states of the LSM6DSSV+QMC6309 sensor context.
-	lsm6dsv_qmc6309_sensor_context->fifo_timestamp_last_value	= fifo_timestamp_last_value;
-	lsm6dsv_qmc6309_sensor_context->fifo_timestamp_last_valid	= fifo_timestamp_last_valid;
-	lsm6dsv_qmc6309_sensor_context->fifo_magnetometer_ready		= fifo_magnetometer_ready;
-
-	// Log the operation.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("LSM6DSV+QMC6309 sensor context \"%s\" has finished polling data from FIFO.", sensor_context->name);
 
 	return SLIME_SENSOR_OK();
 
 	// Wrap the ESP error to slime sensor error;
-	error_imu:	return SLIME_IMU_ERROR	(ret);
-	error_host:	return SLIME_HOST_ERROR	(ret);
+	error_imu: return SLIME_IMU_ERROR(ret);
+	error_esp: return SLIME_ESP_ERROR(ret);
 }
 
 /**
@@ -610,7 +577,47 @@ static slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_poll_fifo(slime_sensor_
  * @param odr	the ODR enum to get the value of the ODR.
  * @return		the ODR value.
  */
-static float_t slime_lsm6dsv_qmc6309_sensor_get_odr(lsm6dsv_data_rate_t odr);
+static float_t slime_lsm6dsv_qmc6309_sensor_get_odr(const lsm6dsv_data_rate_t odr) {
+	// Get the ODR value from enum.
+	switch (odr) {
+		case LSM6DSV_ODR_OFF:				return 0.0f;
+		case LSM6DSV_ODR_AT_1Hz875:			return 1.875f;
+		case LSM6DSV_ODR_AT_7Hz5:			return 7.5f;
+		case LSM6DSV_ODR_AT_15Hz:			return 15.0f;
+		case LSM6DSV_ODR_AT_30Hz:			return 30.0f;
+		case LSM6DSV_ODR_AT_60Hz:			return 60.0f;
+		case LSM6DSV_ODR_AT_120Hz:			return 120.0f;
+		case LSM6DSV_ODR_AT_240Hz:			return 240.0f;
+		case LSM6DSV_ODR_AT_480Hz:			return 480.0f;
+		case LSM6DSV_ODR_AT_960Hz:			return 960.0f;
+		case LSM6DSV_ODR_AT_1920Hz:			return 1920.0f;
+		case LSM6DSV_ODR_AT_3840Hz:			return 3840.0f;
+		case LSM6DSV_ODR_AT_7680Hz:			return 7680.0f;
+		case LSM6DSV_ODR_HA01_AT_15Hz625:	return 15.625f;
+		case LSM6DSV_ODR_HA01_AT_31Hz25:	return 31.25f;
+		case LSM6DSV_ODR_HA01_AT_62Hz5:		return 62.5f;
+		case LSM6DSV_ODR_HA01_AT_125Hz:		return 125.0f;
+		case LSM6DSV_ODR_HA01_AT_250Hz:		return 250.0f;
+		case LSM6DSV_ODR_HA01_AT_500Hz:		return 500.0f;
+		case LSM6DSV_ODR_HA01_AT_1000Hz:	return 1000.0f;
+		case LSM6DSV_ODR_HA01_AT_2000Hz:	return 2000.0f;
+		case LSM6DSV_ODR_HA01_AT_4000Hz:	return 4000.0f;
+		case LSM6DSV_ODR_HA01_AT_8000Hz:	return 8000.0f;
+		case LSM6DSV_ODR_HA02_AT_12Hz5:		return 12.5f;
+		case LSM6DSV_ODR_HA02_AT_25Hz:		return 25.0f;
+		case LSM6DSV_ODR_HA02_AT_50Hz:		return 50.0f;
+		case LSM6DSV_ODR_HA02_AT_100Hz:		return 100.0f;
+		case LSM6DSV_ODR_HA02_AT_200Hz:		return 200.0f;
+		case LSM6DSV_ODR_HA02_AT_400Hz:		return 400.0f;
+		case LSM6DSV_ODR_HA02_AT_800Hz:		return 800.0f;
+		case LSM6DSV_ODR_HA02_AT_1600Hz:	return 1600.0f;
+		case LSM6DSV_ODR_HA02_AT_3200Hz:	return 3200.0f;
+		case LSM6DSV_ODR_HA02_AT_6400Hz:	return 6400.0f;
+	}
+
+	// Should never be here.
+	return 0.0f;
+}
 
 /**
  * @brief					Release the sensor context.
@@ -636,16 +643,16 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	uint8_t*											fifo_word_buffer				= NULL;
 
 	// We cannot proceed without a name, a configuration, an I2C context of the devices, and a handle to receive the created empty sensor context.
-	ESP_GOTO_ON_FALSE(sensor_context_out	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_sensor_context_t handle provided when creating LSM6DSV+QMC6309 sensor context.");
-	ESP_GOTO_ON_FALSE(sensor_context_name	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No name provided when creating LSM6DSV+QMC6309 sensor context.");
-	ESP_GOTO_ON_FALSE(sensor_context_config	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No configuration handle provided when creating LSM6DSV+QMC6309 sensor context.");
-	ESP_GOTO_ON_FALSE(i2c_context			!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No slime_i2c_context_t handle provided when creating LSM6DSV+QMC6309 sensor context.");
+	ESP_GOTO_ON_FALSE(sensor_context_out	!= NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No slime_sensor_context_t handle provided when creating LSM6DSV+QMC6309 sensor context.");
+	ESP_GOTO_ON_FALSE(sensor_context_name	!= NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No name provided when creating LSM6DSV+QMC6309 sensor context.");
+	ESP_GOTO_ON_FALSE(sensor_context_config	!= NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No configuration handle provided when creating LSM6DSV+QMC6309 sensor context.");
+	ESP_GOTO_ON_FALSE(i2c_context			!= NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No slime_i2c_context_t handle provided when creating LSM6DSV+QMC6309 sensor context.");
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Creating LSM6DSV+QMC6309 sensor context \"%s\".", sensor_context_name);
-	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Reinterpreting opaque configuration handle.");
+	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Extracting configuration handle.");
 
-	// Reinterpret the opaque sensor_context_config handle to the slime_lsm6dsv_qmc6309_sensor_context_config_t handle.
+	// Extract the slime_lsm6dsv_qmc6309_sensor_context_config_t handle from the opaque sensor_context_config handle.
 	const slime_lsm6dsv_qmc6309_sensor_context_config_t* config = (slime_lsm6dsv_qmc6309_sensor_context_config_t*) sensor_context_config;
 
 	// Log the progress.
@@ -657,11 +664,11 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	fifo_word_buffer				= calloc(7U * 256U,	sizeof(uint8_t));
 
 	// Check the allocation of the sensor context.
-	ESP_GOTO_ON_FALSE(lsm6dsv_qmc6309_sensor_context != NULL, ESP_ERR_NO_MEM, error_host, TAG, "Failed to create sensor context struct for LSM6DSV+QMC6309 sensor context.");
+	ESP_GOTO_ON_FALSE(lsm6dsv_qmc6309_sensor_context != NULL, ESP_ERR_NO_MEM, error_esp, TAG, "Failed to create sensor context struct for LSM6DSV+QMC6309 sensor context.");
 
 	// Check the allocations of the FIFO buffers.
-	ESP_GOTO_ON_FALSE(fifo_data_buffer != NULL, ESP_ERR_NO_MEM, error_host, TAG, "Failed to create FIFO data buffer of LSM6DSV+QMC6309 sensor context.");
-	ESP_GOTO_ON_FALSE(fifo_word_buffer != NULL, ESP_ERR_NO_MEM, error_host, TAG, "Failed to create FIFO word buffer of LSM6DSV+QMC6309 sensor context.");
+	ESP_GOTO_ON_FALSE(fifo_data_buffer != NULL, ESP_ERR_NO_MEM, error_esp, TAG, "Failed to create FIFO data buffer of LSM6DSV+QMC6309 sensor context.");
+	ESP_GOTO_ON_FALSE(fifo_word_buffer != NULL, ESP_ERR_NO_MEM, error_esp, TAG, "Failed to create FIFO word buffer of LSM6DSV+QMC6309 sensor context.");
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Setting I2C device addresses of the I2C context.");
@@ -671,12 +678,12 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 		/* i2c_context			= */ i2c_context,
 		/* imu_device_address	= */ config->lsm6dsv_device_address,
 		/* mag_device_address	= */ config->qmc6309_device_address
-	), error_host, TAG, "Failed to set I2C device addresses.");
+	), error_esp, TAG, "Failed to set I2C device addresses.");
 
 	// Log the progress.
-	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Caching device driver context handles of the created sensor context struct to stack.");
+	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Extracting device driver context handles from the created sensor context struct.");
 
-	// Cache the handles of the device driver contexts of the sensor context.
+	// Extract the handles of the device driver contexts from the sensor context.
 	stmdev_ctx_t*	lsm6dsv_context = &lsm6dsv_qmc6309_sensor_context->lsm6dsv_context;
 	qmc_context_t*	qmc6309_context = &lsm6dsv_qmc6309_sensor_context->qmc6309_context;
 
@@ -690,17 +697,17 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Initializing the driver context of LSM6DSV.");
 
 	// Fill the device driver context of the LSM6DSV.
-	lsm6dsv_context->mdelay		= delay_milliseconds;
 	lsm6dsv_context->read_reg	= slime_i2c_read_register;
 	lsm6dsv_context->write_reg	= slime_i2c_write_register;
+	lsm6dsv_context->mdelay		= slime_delay_milliseconds;
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Initializing the driver context of QMC6309.");
 
 	// Fill the device driver context of the QMC6309.
-	qmc6309_context->delay_milliseconds	= delay_milliseconds;
 	qmc6309_context->read_register		= slime_i2c_read_register;
 	qmc6309_context->write_register		= slime_i2c_write_register;
+	qmc6309_context->delay_milliseconds	= slime_delay_milliseconds;
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Checking LSM6DSV's device ID.");
@@ -729,7 +736,7 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_master_set(lsm6dsv_context, PROPERTY_DISABLE), error_imu, TAG, "Failed to temporarily disable sensor hub of LSM6DSV.");
 
 	// Delay until the sensor hub is fully disabled.
-	delay_milliseconds(300U);
+	slime_delay_milliseconds(300U);
 
 	// Configure the gyroscope, accelerometer, and timestamp of LSM6DSV.
 
@@ -754,7 +761,7 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 
 	// Configure the slave0 for STATUS1 register read of the QMC6309, configure the slave1 for the output registers read of the QMC6309.
 	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_slv_cfg_read(lsm6dsv_context, 0, &sensor_hub_slave_0_read_config), error_imu, TAG, "Failed to setup sensor hub slave 0 read configuration of LSM6DSV.");
-	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_slv_cfg_read(lsm6dsv_context, 1, &sensor_hub_slave_1_read_config), error_imu, TAG, "Failed to setup sensor hub slave 1 read configuration of QMC6309.");
+	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_slv_cfg_read(lsm6dsv_context, 1, &sensor_hub_slave_1_read_config), error_imu, TAG, "Failed to setup sensor hub slave 1 read configuration of LSM6DSV.");
 
 	// Configure the data rate of the sensor hub.
 	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_data_rate_set(lsm6dsv_context, config->lsm6dsv_sensor_hub_data_rate), error_imu, TAG, "Failed to set sensor hub data rate of LSM6DSV.");
@@ -788,7 +795,7 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_pass_through_set(lsm6dsv_context, PROPERTY_ENABLE), error_imu, TAG, "Failed to enable I2C passthrough of LSM6DSV.");
 
 	// Wait until the passthrough is fully enabled.
-	delay_milliseconds(300U);
+	slime_delay_milliseconds(300U);
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Checking QMC6309's chip ID.");
@@ -820,7 +827,7 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_pass_through_set(lsm6dsv_context, PROPERTY_DISABLE), error_imu, TAG, "Failed to disable I2C passthrough of LSM6DSV.");
 
 	// Wait until the passthrough is fully disabled.
-	delay_milliseconds(300U);
+	slime_delay_milliseconds(300U);
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Calculating sensor sensitivity.");
@@ -875,7 +882,7 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Calibrated sensitivity of timestamp: %.6f.", lsm6dsv_qmc6309_sensor_context->lsm6dsv_timestamp_sensitivity);
 
 	// Log the progress.
-	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Calibrating sensor sample times.");
+	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Calculating sensor sample times.");
 
 	float_t qmc6309_data_rate = 0.0f;
 
@@ -887,20 +894,22 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 		case ODR_200HZ:	qmc6309_data_rate = 200.0f;	break;
 	}
 
-	// Calculate the calibrated sample times.
+	// Calculate the calibrated sample times and the sample time of QMC6309.
 	const float_t gyroscope_sample_time		= 1000.0f / (slime_lsm6dsv_qmc6309_sensor_get_odr(config->lsm6dsv_gyroscope_data_rate)		* scale_factor);
 	const float_t accelerometer_sample_time	= 1000.0f / (slime_lsm6dsv_qmc6309_sensor_get_odr(config->lsm6dsv_accelerometer_data_rate)	* scale_factor);
 	const float_t magnetometer_sample_time	= 1000.0f / qmc6309_data_rate;
 
-	// Store the calibrated sample times to sensor context.
+	// Store the sample times to sensor context.
 	lsm6dsv_qmc6309_sensor_context->lsm6dsv_gyroscope_sample_time		= gyroscope_sample_time;
 	lsm6dsv_qmc6309_sensor_context->lsm6dsv_accelerometer_sample_time	= accelerometer_sample_time;
 	lsm6dsv_qmc6309_sensor_context->qmc6309_magnetometer_sample_time	= magnetometer_sample_time;
 
-	// Log the calibrated sample times.
+	// Log the calibrated sample times of LSM6DSV.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Calibrated sample time of gyroscope: %.2f ms.",		gyroscope_sample_time);
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Calibrated sample time of accelerometer: %.2f ms.",	accelerometer_sample_time);
-	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Calibrated sample time of magnetometer: %.2f ms.",	magnetometer_sample_time);
+
+	// Log the sample time of QMC6309.
+	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Sample time of magnetometer: %.2f ms.", magnetometer_sample_time);
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Starting sensors.");
@@ -912,7 +921,7 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_master_set(lsm6dsv_context, PROPERTY_ENABLE), error_imu, TAG, "Failed to enable sensor hub of LSM6DSV.");
 
 	// Delay until the sensor hub is fully enabled.
-	delay_milliseconds(300U);
+	slime_delay_milliseconds(300U);
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Finalizing LSM6DSV+QMC6309 sensor context.");
@@ -951,9 +960,9 @@ slime_sensor_error_t slime_lsm6dsv_qmc6309_sensor_context_new(
 	slime_sensor_error_t sensor_error;
 
 	// Wrap the ESP error to slime sensor error;
-	error_imu:	sensor_error = SLIME_IMU_ERROR	(ret);	goto error;
-	error_mag:	sensor_error = SLIME_MAG_ERROR	(ret);	goto error;
-	error_host:	sensor_error = SLIME_HOST_ERROR	(ret);	goto error;
+	error_imu: sensor_error = SLIME_IMU_ERROR(ret); goto error;
+	error_mag: sensor_error = SLIME_MAG_ERROR(ret); goto error;
+	error_esp: sensor_error = SLIME_ESP_ERROR(ret); goto error;
 
 	// Resource cleanup when error occurred.
 	error:
@@ -974,21 +983,14 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_context_del(slime_sensor_context_t
 	// Reserve the name of the sensor context.
 	const char* name = sensor_context_in->name;
 
+	// Get the container LSM6DSV+QMC6309 sensor context handle of the base sensor context handle.
+	slime_lsm6dsv_qmc6309_sensor_context_t* lsm6dsv_qmc6309_sensor_context = SLIME_LSM6DSV_QMC6309_EXTRACT_CONTEXT(sensor_context_in);
+
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Releasing LSM6DSV+QMC6309 sensor context \"%s\".", name);
-	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Getting container LSM6DSV+QMC6309 sensor context handle from the base sensor context.");
+	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Extracting handles of device driver contexts from the sensor context struct.");
 
-	// Get the container LSM6DSV+QMC6309 sensor context handle of the base sensor context handle.
-	slime_lsm6dsv_qmc6309_sensor_context_t* lsm6dsv_qmc6309_sensor_context = __containerof(
-		/* value		= */ sensor_context_in,
-		/* container	= */ slime_lsm6dsv_qmc6309_sensor_context_t,
-		/* field_offset	= */ base
-	);
-
-	// Log the progress.
-	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Caching handles of device driver contexts from the sensor context struct to stack.");
-
-	// Fetch the handles of the device driver contexts from the sensor context.
+	// Extract the handles of the device driver contexts from the sensor context.
 	stmdev_ctx_t*	lsm6dsv_context = &lsm6dsv_qmc6309_sensor_context->lsm6dsv_context;
 	qmc_context_t*	qmc6309_context = &lsm6dsv_qmc6309_sensor_context->qmc6309_context;
 
@@ -1000,7 +1002,7 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_context_del(slime_sensor_context_t
 	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_master_set	(lsm6dsv_context, PROPERTY_DISABLE),	skip_stop, TAG, "Failed to disable sensor hub of LSM6DSV.");
 
 	// Delay until the sensor hub is fully disabled.
-	delay_milliseconds(300U);
+	slime_delay_milliseconds(300U);
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Enabling I2C passthrough of LSM6DSV.");
@@ -1009,7 +1011,7 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_context_del(slime_sensor_context_t
 	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_pass_through_set(lsm6dsv_context, PROPERTY_ENABLE), skip_stop, TAG, "Failed to enable I2C passthrough of LSM6DSV.");
 
 	// Wait until the passthrough is fully enabled.
-	delay_milliseconds(300U);
+	slime_delay_milliseconds(300U);
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Resetting QMC6309.");
@@ -1024,7 +1026,7 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_context_del(slime_sensor_context_t
 	ESP_GOTO_ON_ERROR((esp_err_t) lsm6dsv_sh_pass_through_set(lsm6dsv_context, PROPERTY_DISABLE), skip_stop, TAG, "Failed to disable I2C passthrough of LSM6DSV.");
 
 	// Wait until the passthrough is fully disabled.
-	delay_milliseconds(300U);
+	slime_delay_milliseconds(300U);
 
 	// Log the progress.
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Resetting LSM6DSV.");
@@ -1048,7 +1050,7 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_context_del(slime_sensor_context_t
 	free(lsm6dsv_qmc6309_sensor_context->fifo_word_buffer);
 
 	// Log the progress.
-	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Detaching all fields of the LSM6DSV+qmc6309 sensor context.");
+	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("Detaching all fields of the LSM6DSV+QMC6309 sensor context.");
 
 	// Detach all fields.
 	lsm6dsv_qmc6309_sensor_context->fifo_data_buffer		= NULL;
@@ -1088,46 +1090,4 @@ static esp_err_t slime_lsm6dsv_qmc6309_sensor_context_del(slime_sensor_context_t
 	SLIME_LSM6DSV_QMC6309_SENSOR_LOG("LSM6DSV+QMC6309 sensor context \"%s\" has been released.", name);
 
 	return ret;
-}
-
-static float_t slime_lsm6dsv_qmc6309_sensor_get_odr(const lsm6dsv_data_rate_t odr) {
-	// Get the ODR value from enum.
-	switch (odr) {
-		case LSM6DSV_ODR_OFF:				return 0.0f;
-		case LSM6DSV_ODR_AT_1Hz875:			return 1.875f;
-		case LSM6DSV_ODR_AT_7Hz5:			return 7.5f;
-		case LSM6DSV_ODR_AT_15Hz:			return 15.0f;
-		case LSM6DSV_ODR_AT_30Hz:			return 30.0f;
-		case LSM6DSV_ODR_AT_60Hz:			return 60.0f;
-		case LSM6DSV_ODR_AT_120Hz:			return 120.0f;
-		case LSM6DSV_ODR_AT_240Hz:			return 240.0f;
-		case LSM6DSV_ODR_AT_480Hz:			return 480.0f;
-		case LSM6DSV_ODR_AT_960Hz:			return 960.0f;
-		case LSM6DSV_ODR_AT_1920Hz:			return 1920.0f;
-		case LSM6DSV_ODR_AT_3840Hz:			return 3840.0f;
-		case LSM6DSV_ODR_AT_7680Hz:			return 7680.0f;
-		case LSM6DSV_ODR_HA01_AT_15Hz625:	return 15.625f;
-		case LSM6DSV_ODR_HA01_AT_31Hz25:	return 31.25f;
-		case LSM6DSV_ODR_HA01_AT_62Hz5:		return 62.5f;
-		case LSM6DSV_ODR_HA01_AT_125Hz:		return 125.0f;
-		case LSM6DSV_ODR_HA01_AT_250Hz:		return 250.0f;
-		case LSM6DSV_ODR_HA01_AT_500Hz:		return 500.0f;
-		case LSM6DSV_ODR_HA01_AT_1000Hz:	return 1000.0f;
-		case LSM6DSV_ODR_HA01_AT_2000Hz:	return 2000.0f;
-		case LSM6DSV_ODR_HA01_AT_4000Hz:	return 4000.0f;
-		case LSM6DSV_ODR_HA01_AT_8000Hz:	return 8000.0f;
-		case LSM6DSV_ODR_HA02_AT_12Hz5:		return 12.5f;
-		case LSM6DSV_ODR_HA02_AT_25Hz:		return 25.0f;
-		case LSM6DSV_ODR_HA02_AT_50Hz:		return 50.0f;
-		case LSM6DSV_ODR_HA02_AT_100Hz:		return 100.0f;
-		case LSM6DSV_ODR_HA02_AT_200Hz:		return 200.0f;
-		case LSM6DSV_ODR_HA02_AT_400Hz:		return 400.0f;
-		case LSM6DSV_ODR_HA02_AT_800Hz:		return 800.0f;
-		case LSM6DSV_ODR_HA02_AT_1600Hz:	return 1600.0f;
-		case LSM6DSV_ODR_HA02_AT_3200Hz:	return 3200.0f;
-		case LSM6DSV_ODR_HA02_AT_6400Hz:	return 6400.0f;
-	}
-
-	// Should never be here.
-	return 0.0f;
 }

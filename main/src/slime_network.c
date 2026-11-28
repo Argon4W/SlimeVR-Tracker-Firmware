@@ -964,7 +964,7 @@ esp_err_t slime_network_update_battery_level(
 esp_err_t slime_network_context_new(
 			slime_network_context_t**		network_context_out,
 	const	slime_network_context_config_t*	network_context_config,
-			slime_wifi_context_t*			wifi_context
+	const	slime_wifi_context_t*			wifi_context
 ) {
 	esp_err_t ret = ESP_OK;
 

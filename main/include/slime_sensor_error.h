@@ -14,7 +14,7 @@ typedef enum {
 	OK,			/*!< No error occurred. */
 	IMU_ERROR,	/*!< The IMU related error. */
 	MAG_ERROR,	/*!< The magnetometer related error. */
-	HOST_ERROR	/*!< The host related error. */
+	ESP_ERROR	/*!< The ESP host related error. */
 } slime_sensor_error_type_t;
 
 /**
@@ -47,14 +47,14 @@ typedef struct {
  * @brief		Helper macro to create an host sensor error.
  * @param code	The code of the error.
  */
-#define SLIME_HOST_ERROR(code) (slime_sensor_error_t) { .error_type = HOST_ERROR, .error_code = code }
+#define SLIME_ESP_ERROR(code) (slime_sensor_error_t) { .error_type = ESP_ERROR, .error_code = code }
 
 /**
  * @brief	Helper macro to set the local slime_sensor_error_t variable err to the result of the X then extract the error_code
  *			for esp_check.h macros.
  * @param x	The provider of slime_sensor_error_t.
  */
-#define SLIME_ESP_ERROR(x) ((err = (x)).error_code)
+#define SLIME_TO_ESP_ERROR(x) ((err = (x)).error_code)
 
 #ifdef __cplusplus
 }

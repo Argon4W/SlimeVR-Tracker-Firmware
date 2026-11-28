@@ -42,8 +42,8 @@ slime_sensor_error_t slime_empty_sensor_context_new(
 	esp_err_t ret = ESP_OK;
 
 	// We cannot proceed without a name, a handle to receive the created empty sensor context.
-	ESP_GOTO_ON_FALSE(sensor_context_out	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No sensor_context_out handle provided when creating empty sensor context.");
-	ESP_GOTO_ON_FALSE(sensor_context_name	!= NULL, ESP_ERR_INVALID_ARG, error_host, TAG, "No name provided when creating empty sensor context.");
+	ESP_GOTO_ON_FALSE(sensor_context_out	!= NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No sensor_context_out handle provided when creating empty sensor context.");
+	ESP_GOTO_ON_FALSE(sensor_context_name	!= NULL, ESP_ERR_INVALID_ARG, error_esp, TAG, "No name provided when creating empty sensor context.");
 
 	// Log the progress.
 	SLIME_EMPTY_SENSOR_LOG("Creating empty sensor context \"%s\".", sensor_context_name);
@@ -52,7 +52,7 @@ slime_sensor_error_t slime_empty_sensor_context_new(
 	slime_sensor_context_t* sensor_context = calloc(1U, sizeof(slime_sensor_context_t));
 
 	// Check the allocation.
-	ESP_GOTO_ON_FALSE(sensor_context != NULL, ESP_ERR_NO_MEM, error_host, TAG, "Failed to create sensor context struct for empty sensor context.");
+	ESP_GOTO_ON_FALSE(sensor_context != NULL, ESP_ERR_NO_MEM, error_esp, TAG, "Failed to create sensor context struct for empty sensor context.");
 
 	// Log the progress
 	SLIME_EMPTY_SENSOR_LOG("Finalizing empty sensor context.");
@@ -73,7 +73,7 @@ slime_sensor_error_t slime_empty_sensor_context_new(
 	return SLIME_SENSOR_OK();
 
 	// Wrap the ESP error to the slime sensor error.
-	error_host: return SLIME_HOST_ERROR(ret);
+	error_esp: return SLIME_ESP_ERROR(ret);
 }
 
 esp_err_t slime_empty_sensor_context_del(slime_sensor_context_t* sensor_context_in) {

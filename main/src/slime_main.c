@@ -81,10 +81,10 @@ static const slime_screen_bitmap_info_t logo_bitmap = {
 };
 
 // The green text style for normal display.
-slime_screen_text_style_t text_style_green = {
+slime_screen_text_style_t text_style_blue = {
 	.color_type		= RGBA8888,
-	.color_text		= 0x00FF00FFU,
-	.color_outline	= 0x007F00FFU,
+	.color_text		= 0x0000FFFFU,
+	.color_outline	= 0x00007FFFU,
 	.outlined		= true
 };
 
@@ -174,8 +174,11 @@ void slime_main_on_magnetometer(
 	const	float_t					magnetometer_gauss_enu_z,
 			void*					user_context
 ) {
-	slime_main_context_t*		main_context	= (slime_main_context_t*)	user_context;
-	slime_magneto_context_t*	magneto_context	=							main_context->magneto_context;
+	// Get the main context.
+	slime_main_context_t* main_context = (slime_main_context_t*) user_context;
+
+	// Get the magneto context from the main context.
+	slime_magneto_context_t* magneto_context = main_context->magneto_context;
 
 	if (main_context->calibrating) {
 		if (magneto_context->sample_container->sample_norm_count < 45U * 50U) {
@@ -249,17 +252,17 @@ void app_main(void) {
 	ceigen_matrix_handle_t		rotation_matrix	= NULL;
 	ceigen_quaternion_handle_t	quaternion		= NULL;
 
-	ESP_GOTO_ON_ERROR(					slime_nvs_context_new		(&nvs_context,		&nvs_context_config),											error, TAG, "Failed to create NVS context.");
-	ESP_GOTO_ON_ERROR(					slime_gpio_context_new		(&gpio_context,		&gpio_context_config),											error, TAG, "Failed to create GPIO context.");
-	ESP_GOTO_ON_ERROR(					slime_i2c_context_new		(&i2c_context,		&i2c_context_config),											error, TAG, "Failed to create I2C context.");
-	ESP_GOTO_ON_ERROR(					slime_lcd_context_new		(&lcd_context,		&lcd_context_config,	gpio_context),							error, TAG, "Failed to create LCD context.");
-	ESP_GOTO_ON_ERROR(					slime_screen_context_new	(&screen_context,	&screen_context_config,	lcd_context),							error, TAG, "Failed to create screen context.");
-	ESP_GOTO_ON_ERROR(					slime_button_context_new	(&button_context,	&button_context_config),										error, TAG, "Failed to create button context.");
-	ESP_GOTO_ON_ERROR(					slime_magneto_context_new	(&magneto_context,	&slime_magneto_context_config, nvs_context),					error, TAG, "Failed to create magneto context.");
-	ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(	slime_sensor_context_new	(&sensor_context,	slime_sensor_context_type_table, gpio_context, i2c_context)),	error, TAG, "Failed to create sensor context.");
-	ESP_GOTO_ON_ERROR(					slime_fusion_context_new	(&fusion_context,	slime_fusion_context_type_table, sensor_context, 0U),			error, TAG, "Failed to create fusion context.");
-	ESP_GOTO_ON_ERROR(					slime_wifi_context_new		(&wifi_context,		&wifi_context_config),											error, TAG, "Failed to create network context.");
-	ESP_GOTO_ON_ERROR(					slime_network_context_new	(&network_context,	&network_context_config, wifi_context),							error, TAG, "Failed to create network context.");
+	ESP_GOTO_ON_ERROR(						slime_nvs_context_new		(&nvs_context,		&nvs_context_config),											error, TAG, "Failed to create NVS context.");
+	ESP_GOTO_ON_ERROR(						slime_gpio_context_new		(&gpio_context,		&gpio_context_config),											error, TAG, "Failed to create GPIO context.");
+	ESP_GOTO_ON_ERROR(						slime_i2c_context_new		(&i2c_context,		&i2c_context_config),											error, TAG, "Failed to create I2C context.");
+	ESP_GOTO_ON_ERROR(						slime_lcd_context_new		(&lcd_context,		&lcd_context_config,	gpio_context),							error, TAG, "Failed to create LCD context.");
+	ESP_GOTO_ON_ERROR(						slime_screen_context_new	(&screen_context,	&screen_context_config,	lcd_context),							error, TAG, "Failed to create screen context.");
+	ESP_GOTO_ON_ERROR(						slime_button_context_new	(&button_context,	&button_context_config),										error, TAG, "Failed to create button context.");
+	ESP_GOTO_ON_ERROR(						slime_magneto_context_new	(&magneto_context,	&slime_magneto_context_config, nvs_context),					error, TAG, "Failed to create magneto context.");
+	ESP_GOTO_ON_ERROR(						slime_wifi_context_new		(&wifi_context,		&wifi_context_config),											error, TAG, "Failed to create network context.");
+	ESP_GOTO_ON_ERROR(						slime_network_context_new	(&network_context,	&network_context_config, wifi_context),							error, TAG, "Failed to create network context.");
+	ESP_GOTO_ON_ERROR(SLIME_TO_ESP_ERROR(	slime_sensor_context_new	(&sensor_context,	slime_sensor_context_type_table, gpio_context, i2c_context)),	error, TAG, "Failed to create sensor context.");
+	ESP_GOTO_ON_ERROR(						slime_fusion_context_new	(&fusion_context,	slime_fusion_context_type_table, sensor_context, 0U),			error, TAG, "Failed to create fusion context.");
 
 	main_context	= calloc				(1U, sizeof(slime_main_context_t));
 	gyroscope		= ceigen_new_matrix		(3U, 1U);
@@ -456,7 +459,7 @@ void app_main(void) {
 
 				slime_screen_draw_string_fmt(
 					/* screen_context	= */ screen_context,
-					/* text_style		= */ connected ? (mag_disturbed ? &text_style_yellow : &text_style_green) : &text_style_red,
+					/* text_style		= */ connected ? (mag_disturbed ? &text_style_yellow : &text_style_blue) : &text_style_red,
 					/* position_x		= */ 5,
 					/* position_y		= */ 0,
 					/* string			= */ "Y: %.2f\nP: %.2f\nR: %.2f",
@@ -490,7 +493,7 @@ void app_main(void) {
 				break;
 		}
 
-		ESP_GOTO_ON_ERROR(SLIME_ESP_ERROR(slime_sensor_poll_fifo(sensor_context)), error, TAG, "Failed to poll FIFO data of the sensor context.");
+		ESP_GOTO_ON_ERROR(SLIME_TO_ESP_ERROR(slime_sensor_poll_fifo(sensor_context)), error, TAG, "Failed to poll FIFO data of the sensor context.");
 
 		vTaskDelay(pdMS_TO_TICKS(1));
 	}
